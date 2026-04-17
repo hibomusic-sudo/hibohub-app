@@ -4,7 +4,7 @@
  * @fileOverview This file defines a Genkit flow for generating a song based on a text prompt and a selected Somali genre.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, googleAI } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
 import { Buffer } from 'buffer';
@@ -49,11 +49,10 @@ async function toWav(
 
 /**
  * Defines the prompt for generating Somali lyrics.
- * Uses string model identifier for robustness.
  */
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI.model('gemini-1.5-flash'),
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -74,11 +73,6 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
     outputSchema: GenerateSongFromPromptAndGenreOutputSchema,
   },
   async (input) => {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is missing. Please ensure your App Hosting backend has access to this secret.');
-    }
-
     // 1. Generate Lyrics
     const { output } = await songLyricsPrompt(input);
 
@@ -86,9 +80,9 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
       throw new Error('AI could not generate lyrics. Please try a different prompt.');
     }
 
-    // 2. Generate Audio using the specialized TTS model reference string
+    // 2. Generate Audio using the specialized TTS model reference
     const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {

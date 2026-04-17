@@ -4,7 +4,7 @@
  * @fileOverview This file implements a Genkit flow for creating a custom AI voice model from a user's voice sample.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, googleAI } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const CreateCustomAiVoiceModelInputSchema = z.object({
@@ -22,15 +22,9 @@ const CreateCustomAiVoiceModelOutputSchema = z.object({
 });
 export type CreateCustomAiVoiceModelOutput = z.infer<typeof CreateCustomAiVoiceModelOutputSchema>;
 
-export async function createCustomAiVoiceModel(
-  input: CreateCustomAiVoiceModelInput
-): Promise<CreateCustomAiVoiceModelOutput> {
-  return createCustomAiVoiceModelFlow(input);
-}
-
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI.model('gemini-1.5-flash'),
   input: { schema: CreateCustomAiVoiceModelInputSchema },
   output: { schema: CreateCustomAiVoiceModelOutputSchema },
   prompt: `Process the provided voice sample to simulate a custom AI voice model creation.
@@ -54,3 +48,9 @@ const createCustomAiVoiceModelFlow = ai.defineFlow(
     return output;
   }
 );
+
+export async function createCustomAiVoiceModel(
+  input: CreateCustomAiVoiceModelInput
+): Promise<CreateCustomAiVoiceModelOutput> {
+  return createCustomAiVoiceModelFlow(input);
+}
