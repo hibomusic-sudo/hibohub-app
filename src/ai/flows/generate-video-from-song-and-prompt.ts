@@ -41,6 +41,7 @@ async function fetchAndEncodeVideoAsDataUri(
   contentType: string = 'video/mp4'
 ): Promise<string> {
   const fetch = (await import('node-fetch')).default;
+  // Add API key before fetching the video.
   const videoDownloadResponse = await fetch(`${videoUrl}&key=${apiKey}`);
 
   if (
@@ -76,8 +77,9 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
       throw new Error('GEMINI_API_KEY is missing. Please configure it in your App Hosting secrets.');
     }
 
+    // Use the explicit model reference for Veo 3
     let { operation } = await ai.generate({
-      model: 'googleai/veo-3.0-generate-preview',
+      model: googleAI.model('veo-3.0-generate-preview'),
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,
@@ -88,9 +90,11 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
       throw new Error('Failed to start video generation operation.');
     }
 
+    // Wait until the operation completes.
     while (!operation.done) {
       operation = await ai.checkOperation(operation);
       if (!operation.done) {
+        // Sleep for 5 seconds before checking again.
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }

@@ -35,7 +35,7 @@ export async function createCustomAiVoiceModel(
   return createCustomAiVoiceModelFlow(input);
 }
 
-// Genkit Prompt
+// Genkit Prompt using explicit model reference
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
   model: googleAI.model('gemini-1.5-flash'),

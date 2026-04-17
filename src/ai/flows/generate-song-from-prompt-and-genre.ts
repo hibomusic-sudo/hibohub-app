@@ -47,9 +47,10 @@ async function toWav(
   });
 }
 
+// Define the prompt using the googleAI.model() reference
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI.model('gemini-1.5-flash'),
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -83,9 +84,9 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
       throw new Error('Failed to generate song lyrics.');
     }
 
-    // 2. Generate Audio using the specialized TTS model
+    // 2. Generate Audio using the specialized TTS model reference
     const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
@@ -101,10 +102,12 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
       throw new Error('No audio media returned from TTS generation.');
     }
 
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
+    // Handle potential data URI format from Genkit
+    const base64Data = media.url.includes('base64,') 
+      ? media.url.substring(media.url.indexOf(',') + 1)
+      : media.url;
+
+    const audioBuffer = Buffer.from(base64Data, 'base64');
     const wavBase64 = await toWav(audioBuffer);
 
     return {
