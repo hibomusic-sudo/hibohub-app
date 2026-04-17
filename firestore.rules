@@ -1,0 +1,173 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Hibo Hub Security Rules Documentation
+     *
+     * Core Philosophy:
+     * This ruleset implements a strict user-ownership model designed for a music creation and sharing platform. 
+     * Security is grounded in path-based authorization, where a user's identity (UID) is the primary key 
+     * for accessing their private creations and profile.
+     *
+     * Data Structure:
+     * The database is organized hierarchically. User-specific data (profiles, AI songs, videos, voice models, 
+     * and subscriptions) is nested under /users/{userId}. Global configuration data like genres and 
+     * subscription tiers are stored in top-level read-only collections.
+     *
+     * Key Security Decisions:
+     * 1. Denormalization for Performance: Every user-owned document contains a `userId` or `uploaderId` field. 
+     *    This allow rules to verify ownership instantly without performing expensive `get()` lookups on 
+     *    parent documents.
+     * 2. Public vs. Private Content: User-uploaded songs use an `isPublic` flag. While writes are strictly 
+     *    owner-only, read access is granted to the public if the flag is true, enabling discovery.
+     * 3. Relational Integrity: On creation, rules enforce that the internal ownership fields match the 
+     *    authenticated user's ID and the document's location in the hierarchy.
+     * 4. Prototyping Flexibility: While authorization is strictly enforced, data types and optional fields 
+     *    are not validated to allow for rapid frontend iteration.
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the authenticated user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Checks if the user is the owner and the document already exists (for updates/deletes). */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** @description Validates that a field in the incoming data matches the user's UID. */
+    function isValidLink(field) {
+      return request.resource.data[field] == request.auth.uid;
+    }
+
+    /** @description Ensures a field remains unchanged during an update. */
+    function isImmutable(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for the UserProfile entity. Users manage their own profiles.
+     * @path /users/{userId}
+     * @allow (get) Signed-in user viewing any profile. (create/update) User matching {userId}.
+     * @deny (create) Mismatched UID in path. (delete) Not allowed for users.
+     * @principle Self-creation and ownership validation.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); 
+      allow create: if isOwner(userId) && isValidLink('id');
+      allow update: if isExistingOwner(userId) && isImmutable('id');
+      allow delete: if false; // Profiles are typically not deleted by users in this app context.
+
+      /**
+       * @description Records of user subscription tiers. Private to the user.
+       * @path /users/{userId}/subscriptions/{subscriptionId}
+       * @allow (read/write) Only the owner of the parent user document.
+       * @deny (read) Any other user.
+       * @principle Path-based ownership for private subcollections.
+       */
+      match /subscriptions/{subscriptionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidLink('userId');
+        allow update: if isExistingOwner(userId) && isImmutable('userId');
+        allow delete: if false; // Subscriptions usually managed by system/admin.
+      }
+
+      /**
+       * @description AI-generated songs owned by the user. Private content.
+       * @path /users/{userId}/aiGeneratedSongs/{aiSongId}
+       * @allow (read/write) Only the owner of the parent user document.
+       * @deny (write) Mismatched userId.
+       * @principle Strict ownership for AI-generated assets.
+       */
+      match /aiGeneratedSongs/{aiSongId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidLink('userId');
+        allow update: if isExistingOwner(userId) && isImmutable('userId');
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Videos associated with a specific AI song. Private content.
+         * @path /users/{userId}/aiGeneratedSongs/{aiSongId}/aiGeneratedVideos/{aiVideoId}
+         * @allow (read/write) Only the owner of the grandparent user document.
+         * @principle Deeply nested ownership validation using path parameters.
+         */
+        match /aiGeneratedVideos/{aiVideoId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && isValidLink('userId');
+          allow update: if isExistingOwner(userId) && isImmutable('userId');
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Custom AI voice models created by the user.
+       * @path /users/{userId}/aiVoiceModels/{voiceModelId}
+       * @allow (read/write) Only the owner of the model.
+       * @principle Private biometric-like data protection.
+       */
+      match /aiVoiceModels/{voiceModelId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidLink('userId');
+        allow update: if isExistingOwner(userId) && isImmutable('userId');
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Songs uploaded by users with a public/private toggle.
+       * @path /users/{userId}/uploadedSongs/{uploadedSongId}
+       * @allow (get) Owner OR if isPublic is true. (list) Owner. (create/update) Owner only.
+       * @deny (update) Changing the uploaderId.
+       * @principle Public discovery with owner-only management.
+       */
+      match /uploadedSongs/{uploadedSongId} {
+        allow get: if isOwner(userId) || resource.data.isPublic == true;
+        allow list: if isOwner(userId); // list for public discovery should use collectionGroup.
+        allow create: if isOwner(userId) && isValidLink('uploaderId');
+        allow update: if isExistingOwner(userId) && isImmutable('uploaderId');
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description CollectionGroup rule for public song discovery.
+     * @path {allPaths}/uploadedSongs/{uploadedSongId}
+     */
+    match /{path=**}/uploadedSongs/{uploadedSongId} {
+      allow list: if isSignedIn() && resource.data.isPublic == true;
+    }
+
+    /**
+     * @description Predefined musical genres.
+     * @path /genres/{genreId}
+     * @allow (read) Any signed-in user. (write) Denied.
+     * @principle Global read-only reference data.
+     */
+    match /genres/{genreId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Available premium subscription plans.
+     * @path /subscriptionTiers/{tierId}
+     * @allow (read) Any signed-in user. (write) Denied.
+     * @principle Global read-only reference data.
+     */
+    match /subscriptionTiers/{tierId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+  }
+}

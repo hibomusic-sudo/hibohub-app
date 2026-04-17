@@ -1,0 +1,592 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile within the Hibo Hub application, storing personal information, roles, and application-specific usage data, linked to an external authentication system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "externalAuthId": {
+          "type": "string",
+          "description": "The unique identifier from the external authentication system (e.g., Firebase Auth UID) linked to this user profile. (Relationship: ExternalAuthSystem 1:1 UserProfile)"
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's chosen display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, primarily for communication and identification.",
+          "format": "email"
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture or avatar.",
+          "format": "uri"
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography or description provided by the user, especially for artists and music designers."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user, defining their permissions and typical activities within the app. (e.g., 'Regular', 'Artist', 'MusicDesigner')"
+        },
+        "freeGenerationsUsed": {
+          "type": "number",
+          "description": "The count of free AI content generations used by the user. Limited to one before triggering the premium paywall."
+        },
+        "isPremiumSubscriber": {
+          "type": "boolean",
+          "description": "Indicates whether the user currently has an active premium subscription."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "externalAuthId",
+        "username",
+        "email",
+        "role",
+        "freeGenerationsUsed",
+        "isPremiumSubscriber",
+        "createdAt"
+      ]
+    },
+    "SubscriptionTier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SubscriptionTier",
+      "type": "object",
+      "description": "Defines the available premium subscription plans and their details offered within Hibo Hub.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SubscriptionTier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "A display name for the subscription tier (e.g., 'Monthly Premium', 'Yearly Premium')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the features and benefits included in this tier."
+        },
+        "priceAmount": {
+          "type": "number",
+          "description": "The monetary cost of the subscription tier."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency of the subscription price (e.g., 'USD', 'EUR')."
+        },
+        "durationMonths": {
+          "type": "number",
+          "description": "The duration of the subscription in months (e.g., 1 for monthly, 12 for yearly)."
+        },
+        "features": {
+          "type": "array",
+          "description": "A list of strings describing key features included in this subscription tier.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "priceAmount",
+        "currency",
+        "durationMonths",
+        "features"
+      ]
+    },
+    "UserSubscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSubscription",
+      "type": "object",
+      "description": "Records an individual user's active or past premium subscription details, linking to the specific tier they purchased.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserSubscription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity associated with this subscription. (Relationship: UserProfile 1:N UserSubscription)"
+        },
+        "tierId": {
+          "type": "string",
+          "description": "Reference to the SubscriptionTier entity that this user has subscribed to. (Relationship: SubscriptionTier 1:N UserSubscription)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date and time when the subscription became active.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date and time when the subscription is set to expire.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates whether this subscription is currently active."
+        },
+        "paymentProviderTransactionId": {
+          "type": "string",
+          "description": "An identifier from the payment gateway or app store for this transaction."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the subscription record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the subscription record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "tierId",
+        "startDate",
+        "endDate",
+        "isActive",
+        "paymentProviderTransactionId",
+        "createdAt"
+      ]
+    },
+    "Genre": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Genre",
+      "type": "object",
+      "description": "Represents a predefined musical genre, used for categorizing both AI-generated and user-uploaded songs.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Genre entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the genre (e.g., 'Dhaanto', 'Qaraami', 'Afro-Somali', 'Rap')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description or definition of the musical genre."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "AiGeneratedSong": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AiGeneratedSong",
+      "type": "object",
+      "description": "Represents a song that has been generated using Hibo Hub's AI Music Creation Studio.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AiGeneratedSong entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who generated this song. (Relationship: UserProfile 1:N AiGeneratedSong)"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The text prompt provided by the user to generate the song."
+        },
+        "genreId": {
+          "type": "string",
+          "description": "Reference to the Genre entity selected for this song. (Relationship: Genre 1:N AiGeneratedSong)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the generated song, either AI-suggested or user-edited."
+        },
+        "audioFileUrl": {
+          "type": "string",
+          "description": "URL to the generated audio file stored in cloud storage (e.g., Firebase Storage).",
+          "format": "uri"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "The length of the generated song in seconds."
+        },
+        "voiceModelId": {
+          "type": "string",
+          "description": "Optional reference to an AiVoiceModel entity if a custom voice was used for generation. (Relationship: AiVoiceModel 1:N AiGeneratedSong)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the AI song was generated.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the AI song record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "prompt",
+        "genreId",
+        "title",
+        "audioFileUrl",
+        "durationSeconds",
+        "createdAt"
+      ]
+    },
+    "AiGeneratedVideo": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AiGeneratedVideo",
+      "type": "object",
+      "description": "Represents an AI-generated music video or visualizer created for an AI-generated song within Hibo Hub.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AiGeneratedVideo entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who generated this video. (Relationship: UserProfile 1:N AiGeneratedVideo)"
+        },
+        "songId": {
+          "type": "string",
+          "description": "Reference to the AiGeneratedSong entity for which this video was created. (Relationship: AiGeneratedSong 1:N AiGeneratedVideo)"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The text prompt provided by the user for the video style."
+        },
+        "videoFileUrl": {
+          "type": "string",
+          "description": "URL to the generated video file stored in cloud storage.",
+          "format": "uri"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "URL to a thumbnail image for the video.",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the AI video was generated.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the AI video record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "songId",
+        "prompt",
+        "videoFileUrl",
+        "createdAt"
+      ]
+    },
+    "AiVoiceModel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AiVoiceModel",
+      "type": "object",
+      "description": "Represents a custom AI voice model created by a user through recording a voice sample.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AiVoiceModel entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who owns this voice model. (Relationship: UserProfile 1:N AiVoiceModel)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-defined name for their custom AI voice model."
+        },
+        "sampleAudioUrl": {
+          "type": "string",
+          "description": "URL to the 1-minute voice sample audio file used for training the model.",
+          "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current processing status of the voice model (e.g., 'Pending', 'Training', 'Ready', 'Failed')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the voice model recording was initiated.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the voice model's status or details were last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "sampleAudioUrl",
+        "status",
+        "createdAt"
+      ]
+    },
+    "UserUploadedSong": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserUploadedSong",
+      "type": "object",
+      "description": "Represents a song uploaded directly by a user (e.g., an artist) to their Hibo Hub library, separate from AI-generated content.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserUploadedSong entity."
+        },
+        "uploaderId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who uploaded this song. (Relationship: UserProfile 1:N UserUploadedSong)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the uploaded song."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description or notes about the uploaded song."
+        },
+        "audioFileUrl": {
+          "type": "string",
+          "description": "URL to the uploaded audio file stored in cloud storage.",
+          "format": "uri"
+        },
+        "coverImageUrl": {
+          "type": "string",
+          "description": "Optional URL to custom cover art for the song.",
+          "format": "uri"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "The length of the uploaded song in seconds (maximum 120 seconds for this application)."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Indicates whether the song is publicly visible to other users or kept private by the uploader."
+        },
+        "genreIds": {
+          "type": "array",
+          "description": "References to Genre entities, categorizing the uploaded song. (Relationship: Genre N:N UserUploadedSong)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the song was uploaded.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the song record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "uploaderId",
+        "title",
+        "audioFileUrl",
+        "durationSeconds",
+        "isPublic",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information, roles, and application-specific settings. The document ID `{userId}` must match `request.auth.uid`. Includes 'externalAuthId' denormalized for direct security rule comparisons.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "UserSubscription",
+          "schema": {
+            "$ref": "#/backend/entities/UserSubscription"
+          },
+          "description": "Records an individual user's active or past premium subscription details. Includes 'userId' denormalized to ensure authorization independence by matching with the parent path's '{userId}' and 'request.auth.uid'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this subscription."
+            },
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the user's specific subscription record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/aiGeneratedSongs/{aiSongId}",
+        "definition": {
+          "entityName": "AiGeneratedSong",
+          "schema": {
+            "$ref": "#/backend/entities/AiGeneratedSong"
+          },
+          "description": "Stores details for AI-generated songs owned by a specific user. Includes 'userId' denormalized for authorization independence by matching with the parent path's '{userId}' and 'request.auth.uid'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who generated this song."
+            },
+            {
+              "name": "aiSongId",
+              "description": "The unique identifier for the AI-generated song."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/aiGeneratedSongs/{aiSongId}/aiGeneratedVideos/{aiVideoId}",
+        "definition": {
+          "entityName": "AiGeneratedVideo",
+          "schema": {
+            "$ref": "#/backend/entities/AiGeneratedVideo"
+          },
+          "description": "Stores details for AI-generated videos, nested under the specific AI-generated song they accompany. Includes 'userId' denormalized from the grandparent path and 'songId' from the parent path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who generated this video (denormalized from grandparent)."
+            },
+            {
+              "name": "aiSongId",
+              "description": "The unique identifier of the AI-generated song this video is for (denormalized from parent)."
+            },
+            {
+              "name": "aiVideoId",
+              "description": "The unique identifier for the AI-generated video."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/aiVoiceModels/{voiceModelId}",
+        "definition": {
+          "entityName": "AiVoiceModel",
+          "schema": {
+            "$ref": "#/backend/entities/AiVoiceModel"
+          },
+          "description": "Stores custom AI voice models created by a specific user. Includes 'userId' denormalized for authorization independence by matching with the parent path's '{userId}' and 'request.auth.uid'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this voice model."
+            },
+            {
+              "name": "voiceModelId",
+              "description": "The unique identifier for the AI voice model."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/uploadedSongs/{uploadedSongId}",
+        "definition": {
+          "entityName": "UserUploadedSong",
+          "schema": {
+            "$ref": "#/backend/entities/UserUploadedSong"
+          },
+          "description": "Stores songs uploaded directly by a user. Includes 'uploaderId' denormalized for authorization independence by matching with the parent path's '{userId}' and 'request.auth.uid', and 'isPublic' for secure public/private content handling.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who uploaded this song."
+            },
+            {
+              "name": "uploadedSongId",
+              "description": "The unique identifier for the user-uploaded song."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/genres/{genreId}",
+        "definition": {
+          "entityName": "Genre",
+          "schema": {
+            "$ref": "#/backend/entities/Genre"
+          },
+          "description": "Global collection for predefined musical genres. Read-only for all authenticated users.",
+          "params": [
+            {
+              "name": "genreId",
+              "description": "The unique identifier for the musical genre."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptionTiers/{tierId}",
+        "definition": {
+          "entityName": "SubscriptionTier",
+          "schema": {
+            "$ref": "#/backend/entities/SubscriptionTier"
+          },
+          "description": "Global collection for available premium subscription plans. Read-only for all authenticated users.",
+          "params": [
+            {
+              "name": "tierId",
+              "description": "The unique identifier for the subscription tier."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for Hibo Hub is designed to prioritize authorization independence, clarity, and scalability, adhering strictly to the provided core design principles and mandates. The core strategy is to use path-based ownership for all user-specific data and denormalize authorization-critical fields directly into each document, eliminating the need for `get()` calls in security rules.\n\n**Authorization Independence (CRITICAL):**\nThis is achieved by embedding the `userId` (which corresponds to `request.auth.uid`) directly into the document path for all user-owned collections (e.g., `/users/{userId}/aiGeneratedSongs/{aiSongId}`). Furthermore, each document in these user-owned subcollections (e.g., `AiGeneratedSong`, `AiGeneratedVideo`, `AiVoiceModel`, `UserSubscription`, `UserUploadedSong`) explicitly includes the `userId` or `uploaderId` field. For instance, an `AiGeneratedSong` document located at `/users/{userId}/aiGeneratedSongs/{aiSongId}` will have a `userId` field whose value matches `{userId}` from the path. This allows security rules to perform direct comparisons like `request.auth.uid == resource.data.userId` or `request.auth.uid == request.path[1]` without cross-document `get()` operations, ensuring atomic operations and simplifying rule debugging.\n\nFor nested entities like `AiGeneratedVideo` (under `aiGeneratedSongs`), the `userId` from the grandparent path is denormalized directly into the `AiGeneratedVideo` document. This means a video's ownership can be verified by checking `request.auth.uid == resource.data.userId` without needing to traverse up the document hierarchy using `get()`.\n\n**QAPs (Rules are not Filters):**\nSecure `list` operations are enabled through a combination of structural segregation and explicit authorization fields:\n1.  **User-Private Data:** Collections such as `/users/{userId}/aiGeneratedSongs`, `/users/{userId}/aiVoiceModels`, and `/users/{userId}/subscriptions` are inherently private. Access is granted only if `request.auth.uid` matches the `{userId}` in the path (and the denormalized `userId` field within the document). This naturally makes `list` operations secure, as users can only retrieve their own content.\n2.  **Public/Private User-Uploaded Content:** For `UserUploadedSong` documents, located at `/users/{userId}/uploadedSongs/{uploadedSongId}`, the `isPublic` boolean field is stored directly within the document. Security rules can then allow read access for all users if `resource.data.isPublic == true`, while restricting write/delete access to `request.auth.uid == resource.data.uploaderId`. This segregation of access within a single collection, enabled by the `isPublic` field, allows for secure and efficient queries of public songs (e.g., `db.collectionGroup('uploadedSongs').where('isPublic', '==', true)`) without exposing private content or relying on `get()` calls.\n3.  **Global Data:** `genres` and `subscriptionTiers` are top-level collections with a homogeneous security posture (read-only for all authenticated users). This simplifies their security rules significantly, as no user-specific checks are required beyond authentication.\n\nThis design ensures that security rules are straightforward, robust, and easy to debug, while supporting the application's functional requirements for user-generated content, AI creations, and subscription management."
+  }
+}
