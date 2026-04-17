@@ -42,6 +42,7 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('Dhaanto');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showAllGenres, setShowAllGenres] = useState(false);
   const { useGeneration, t } = useApp();
 
   const handleGenerate = async () => {
@@ -99,7 +100,7 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
           {t('music_studio')}
         </h1>
         <p className="text-muted-foreground text-sm max-w-[280px]">
-          U samee hees Somali ah oo heer caalami ah adigoo isticmaalaya AI.
+          U samee hees Somali ah oo heer caalami ah adigoo isticmaalaya AI. ✨🎧🎹
         </p>
       </header>
 
@@ -116,11 +117,11 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
 
         <div className="space-y-6">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <Radio className="w-4 h-4 text-primary" /> {t('genre_label')}
+            <Radio className="w-4 h-4 text-primary" /> {t('genre_label')} 🪘
           </label>
           
-          <div className="space-y-8">
-            {GENRE_CATEGORIES.map((cat) => (
+          <div className="space-y-6">
+            {(showAllGenres ? GENRE_CATEGORIES : [GENRE_CATEGORIES[0]]).map((cat) => (
               <div key={cat.name} className="space-y-3">
                 <div className="flex items-center gap-2 px-1">
                   <cat.icon className="w-4 h-4 text-accent" />
@@ -147,6 +148,13 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
                 </ScrollArea>
               </div>
             ))}
+            
+            <button 
+              onClick={() => setShowAllGenres(!showAllGenres)}
+              className="w-full py-3 rounded-xl border border-white/10 text-xs font-bold text-muted-foreground hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+            >
+              {showAllGenres ? '🙉 Qari Qaybaha (See less)' : '🎵 Eeg Noocyo Kale (See more)'}
+            </button>
           </div>
         </div>
       </div>

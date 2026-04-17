@@ -52,7 +52,7 @@ async function toWav(
  */
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: googleAI.model('gemini-1.5-flash'),
+  model: googleAI.model('gemini-2.0-flash'),
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -82,7 +82,7 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
 
     // 2. Generate Audio using the specialized TTS model reference
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: googleAI.model('gemini-3.1-flash-tts-preview'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
