@@ -4,7 +4,7 @@
  * @fileOverview This file defines a Genkit flow for generating a song based on a text prompt and a selected Somali genre.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, googleAI } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
 import { Buffer } from 'buffer';
@@ -55,7 +55,11 @@ async function toWav(
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
-  output: { schema: z.string().describe('The generated song lyrics or musical concept.') },
+  output: { 
+    schema: z.object({
+      lyrics: z.string().describe('The generated song lyrics.')
+    }) 
+  },
   prompt: `You are an expert Somali songwriter. Create original song lyrics for a song.
 The song should be in the {{{genre}}} genre, capturing its unique rhythm and cultural essence.
 The theme is: "{{{prompt}}}".
@@ -72,15 +76,15 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
   },
   async (input) => {
     // 1. Generate Lyrics using the default text model
-    const { output: lyrics } = await songLyricsPrompt(input);
+    const { output } = await songLyricsPrompt(input);
 
-    if (!lyrics) {
+    if (!output || !output.lyrics) {
       throw new Error('Failed to generate song lyrics.');
     }
 
     // 2. Generate Audio using the TTS model
     const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
@@ -89,7 +93,7 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
           },
         },
       },
-      prompt: `Speaker1: ${lyrics}`,
+      prompt: `Speaker1: ${output.lyrics}`,
     });
 
     if (!media || !media.url) {

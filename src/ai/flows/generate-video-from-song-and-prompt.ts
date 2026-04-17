@@ -4,9 +4,9 @@
  * @fileOverview A Genkit flow for generating an AI music video or dynamic audio visualizer based on a text prompt and an existing song.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import {Buffer} from 'buffer';
+import { ai, googleAI } from '@/ai/genkit';
+import { z } from 'genkit';
+import { Buffer } from 'buffer';
 
 const GenerateVideoFromSongAndPromptInputSchema = z.object({
   songAudioDataUri: z
@@ -76,8 +76,8 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
       throw new Error('GEMINI_API_KEY is not set.');
     }
 
-    let {operation} = await ai.generate({
-      model: 'googleai/veo-3.0-generate-preview',
+    let { operation } = await ai.generate({
+      model: googleAI.model('veo-3.0-generate-preview'),
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,
