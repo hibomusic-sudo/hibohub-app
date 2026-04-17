@@ -6,8 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
-import * as wav from 'wav';
+import wav from 'wav';
 import { Buffer } from 'buffer';
 
 const GenerateSongFromPromptAndGenreInputSchema = z.object({
@@ -72,14 +71,16 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
     outputSchema: GenerateSongFromPromptAndGenreOutputSchema,
   },
   async (input) => {
+    // 1. Generate Lyrics using the default text model
     const { output: lyrics } = await songLyricsPrompt(input);
 
     if (!lyrics) {
       throw new Error('Failed to generate song lyrics.');
     }
 
+    // 2. Generate Audio using the TTS model
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
@@ -88,7 +89,7 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
           },
         },
       },
-      prompt: lyrics,
+      prompt: `Speaker1: ${lyrics}`,
     });
 
     if (!media || !media.url) {
