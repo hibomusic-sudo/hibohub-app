@@ -17,21 +17,25 @@ const GENRE_CATEGORIES = [
   {
     name: 'Dhaqan (Traditional)',
     icon: Drum,
+    image: '/images/trad_drum.png',
     styles: ['Dhaanto', 'Buraanbur', 'Xamari', 'May-Maay', 'Saar', 'Jaandheer']
   },
   {
     name: 'Casri (Modern)',
     icon: Flame,
+    image: '/images/mod_mic.png',
     styles: ['Pop Somali', 'Afrobeat Somali', 'R&B Somali', 'Hip-hop', 'Trap Somali', 'Dancehall']
   },
   {
     name: 'Classic & Spiritual',
     icon: Music,
+    image: '/images/classic_oud.png',
     styles: ['Qaraami', 'Nashiid', 'Qasiido', 'Oud Classic']
   },
   {
     name: 'Fusion & Dance',
     icon: Zap,
+    image: '/images/fusion_dj.png',
     styles: ['Somali EDM', 'Afro-Somali Fusion', 'Arabic Fusion', 'Club Music']
   }
 ];
@@ -122,12 +126,18 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
           
           <div className="space-y-6">
             {(showAllGenres ? GENRE_CATEGORIES : [GENRE_CATEGORIES[0]]).map((cat) => (
-              <div key={cat.name} className="space-y-3">
-                <div className="flex items-center gap-2 px-1">
-                  <cat.icon className="w-4 h-4 text-accent" />
-                  <span className="text-[11px] font-bold text-white/40 uppercase tracking-tighter">{cat.name}</span>
+              <div key={cat.name} className="space-y-4 relative overflow-hidden rounded-3xl border border-white/10 bg-black/20 p-5 shadow-inner">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex items-center gap-3 px-1 relative z-10">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/20 shadow-xl glow-purple relative group-hover:scale-110 transition-transform">
+                    <img src={cat.image} className="w-full h-full object-cover" alt={cat.name} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black text-white/90 uppercase tracking-tight block">{cat.name}</span>
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1"><cat.icon className="w-3 h-3 text-accent" /> Soo dooro noocaaga</span>
+                  </div>
                 </div>
-                <ScrollArea className="w-full whitespace-nowrap pb-2">
+                <ScrollArea className="w-full whitespace-nowrap pb-2 relative z-10">
                   <div className="flex gap-2">
                     {cat.styles.map((style) => (
                       <button
