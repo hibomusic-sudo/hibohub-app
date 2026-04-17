@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Mic, Square, Sparkles, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/lib/app-context';
 import { createCustomAiVoiceModel } from '@/ai/flows/create-custom-ai-voice-model';
 import { toast } from '@/hooks/use-toast';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
+  const { user } = useUser();
+  const db = useFirestore();
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { useGeneration, addToLibrary } = useApp();
+  const { useGeneration } = useApp();
   
-  // Mock recording logic for demo purposes
   const handleToggleRecord = () => {
     if (isRecording) {
       setIsRecording(false);
-      // Create a dummy blob
       setAudioBlob(new Blob());
     } else {
       setIsRecording(true);
@@ -26,6 +29,7 @@ export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
   };
 
   const handleCloneVoice = async () => {
+    if (!user || !db) return;
     if (!useGeneration()) {
       onShowPremium();
       return;
@@ -33,20 +37,23 @@ export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
 
     setIsProcessing(true);
     try {
-      // In a real app, we would use a real data URI from the recording
       const mockDataUri = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
       
       const result = await createCustomAiVoiceModel({
         voiceSampleDataUri: mockDataUri
       });
       
-      addToLibrary({
-        id: result.voiceModelId,
-        type: 'voice',
-        title: `Codkayga: ${result.voiceModelId.slice(0, 5)}`,
-        url: '#', // Placeholder
+      const voiceModelId = result.voiceModelId;
+      const voiceData = {
+        id: voiceModelId,
+        userId: user.uid,
+        name: `Codkayga: ${voiceModelId.slice(0, 5)}`,
+        sampleAudioUrl: mockDataUri,
+        status: 'Ready',
         createdAt: new Date().toISOString()
-      });
+      };
+
+      await setDoc(doc(db, 'users', user.uid, 'aiVoiceModels', voiceModelId), voiceData);
 
       toast({ title: "Guul!", description: "Codkaagii waa la xafiday!" });
       setAudioBlob(null);
@@ -65,7 +72,6 @@ export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
       </header>
 
       <div className="flex flex-col items-center justify-center p-12 rounded-[2rem] glass-card border-white/10 relative overflow-hidden">
-        {/* Background glow */}
         <div className={cn(
           "absolute inset-0 premium-gradient opacity-10 transition-opacity duration-1000",
           isRecording ? "opacity-30" : "opacity-5"
@@ -133,8 +139,4 @@ export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
       </div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }
