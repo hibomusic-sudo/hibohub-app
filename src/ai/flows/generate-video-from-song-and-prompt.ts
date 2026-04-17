@@ -71,13 +71,13 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
     outputSchema: GenerateVideoFromSongAndPromptOutputSchema,
   },
   async input => {
-    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
     if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is not set.');
+      throw new Error('GEMINI_API_KEY is missing. Please configure it in your App Hosting secrets.');
     }
 
     let { operation } = await ai.generate({
-      model: googleAI.model('veo-3.0-generate-preview'),
+      model: 'googleai/veo-3.0-generate-preview',
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,

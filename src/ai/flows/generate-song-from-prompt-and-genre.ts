@@ -49,7 +49,7 @@ async function toWav(
 
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: googleAI.model('gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -71,6 +71,11 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
     outputSchema: GenerateSongFromPromptAndGenreOutputSchema,
   },
   async (input) => {
+    // Check if API key is present
+    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENAI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is missing. Please configure it in your App Hosting secrets.');
+    }
+
     // 1. Generate Lyrics
     const { output } = await songLyricsPrompt(input);
 
@@ -80,7 +85,7 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
 
     // 2. Generate Audio using the specialized TTS model
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
