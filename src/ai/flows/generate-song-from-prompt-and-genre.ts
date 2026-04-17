@@ -54,6 +54,7 @@ async function toWav(
 
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -75,16 +76,16 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
     outputSchema: GenerateSongFromPromptAndGenreOutputSchema,
   },
   async (input) => {
-    // 1. Generate Lyrics using the default text model
+    // 1. Generate Lyrics
     const { output } = await songLyricsPrompt(input);
 
     if (!output || !output.lyrics) {
       throw new Error('Failed to generate song lyrics.');
     }
 
-    // 2. Generate Audio using the TTS model
+    // 2. Generate Audio using the specialized TTS model
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {

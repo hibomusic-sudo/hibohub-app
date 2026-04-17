@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow for creating a custom AI voice model from a user's voice sample.
@@ -37,6 +38,7 @@ export async function createCustomAiVoiceModel(
 // Genkit Prompt
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: CreateCustomAiVoiceModelInputSchema },
   output: { schema: CreateCustomAiVoiceModelOutputSchema },
   prompt: `You are an AI assistant tasked with processing a user's voice sample to create a custom AI voice model.
