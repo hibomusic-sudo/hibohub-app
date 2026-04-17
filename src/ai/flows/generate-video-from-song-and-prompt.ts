@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating an AI music video or dynamic audio visualizer based on a text prompt and an existing song.
  */
 
-import { ai, googleAI } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { Buffer } from 'buffer';
 
@@ -41,7 +41,6 @@ async function fetchAndEncodeVideoAsDataUri(
   contentType: string = 'video/mp4'
 ): Promise<string> {
   const fetch = (await import('node-fetch')).default;
-  // Add API key before fetching the video.
   const videoDownloadResponse = await fetch(`${videoUrl}&key=${apiKey}`);
 
   if (
@@ -74,12 +73,12 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
   async input => {
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
     if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is missing. Please configure it in your App Hosting secrets.');
+      throw new Error('GEMINI_API_KEY is missing. Video generation requires an API key.');
     }
 
-    // Use the explicit model reference for Veo 3
+    // Use direct string model reference for Veo 3
     let { operation } = await ai.generate({
-      model: googleAI.model('veo-3.0-generate-preview'),
+      model: 'googleai/veo-3.0-generate-preview',
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,
@@ -87,25 +86,23 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
     });
 
     if (!operation) {
-      throw new Error('Failed to start video generation operation.');
+      throw new Error('Failed to initiate video generation.');
     }
 
-    // Wait until the operation completes.
     while (!operation.done) {
       operation = await ai.checkOperation(operation);
       if (!operation.done) {
-        // Sleep for 5 seconds before checking again.
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
 
     if (operation.error) {
-      throw new Error(`Failed to generate video: ${operation.error.message}`);
+      throw new Error(`Video Generation Error: ${operation.error.message}`);
     }
 
     const videoPart = operation.output?.message?.content.find(p => !!p.media);
     if (!videoPart?.media?.url) {
-      throw new Error('Failed to find generated video URL.');
+      throw new Error('Video generation completed but no video file was found.');
     }
 
     const videoDataUri = await fetchAndEncodeVideoAsDataUri(
