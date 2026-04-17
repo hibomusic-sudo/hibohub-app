@@ -77,7 +77,7 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
     }
 
     let { operation } = await ai.generate({
-      model: 'googleai/veo-3.0-generate-preview',
+      model: googleAI.model('veo-3.0-generate-preview'),
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,
