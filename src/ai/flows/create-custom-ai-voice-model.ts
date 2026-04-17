@@ -24,7 +24,7 @@ export type CreateCustomAiVoiceModelOutput = z.infer<typeof CreateCustomAiVoiceM
 
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: CreateCustomAiVoiceModelInputSchema },
   output: { schema: CreateCustomAiVoiceModelOutputSchema },
   prompt: `Process the provided voice sample to simulate a custom AI voice model creation.

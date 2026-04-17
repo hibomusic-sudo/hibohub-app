@@ -48,11 +48,11 @@ async function toWav(
 }
 
 /**
- * Defines the prompt for generating Somali lyrics using the latest stable model.
+ * Defines the prompt for generating Somali lyrics.
  */
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
