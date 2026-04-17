@@ -4,19 +4,14 @@
  * @fileOverview This file defines a Genkit flow for generating a song based on a text prompt and a selected Somali genre.
  */
 
-import { ai, googleAI } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
 import { Buffer } from 'buffer';
 
 const GenerateSongFromPromptAndGenreInputSchema = z.object({
   prompt: z.string().describe('A text prompt describing the desired song.'),
-  genre: z.enum([
-    'Dhaanto', 'Buraanbur', 'Xamari', 'May-Maay', 'Saar', 'Jaandheer',
-    'Pop Somali', 'Afrobeat Somali', 'R&B Somali', 'Hip-hop', 'Trap Somali', 'Dancehall',
-    'Qaraami', 'Nashiid', 'Qasiido', 'Oud Classic',
-    'Somali EDM', 'Afro-Somali Fusion', 'Arabic Fusion', 'Club Music'
-  ]).describe('The Somali genre for the song.'),
+  genre: z.string().describe('The Somali genre for the song.'),
 });
 export type GenerateSongFromPromptAndGenreInput = z.infer<typeof GenerateSongFromPromptAndGenreInputSchema>;
 
@@ -54,7 +49,7 @@ async function toWav(
 
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: googleAI.model('gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({
@@ -85,7 +80,7 @@ const generateSongFromPromptAndGenreFlow = ai.defineFlow(
 
     // 2. Generate Audio using the specialized TTS model
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: 'googleai/gemini-2.5-flash-preview-tts',
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {

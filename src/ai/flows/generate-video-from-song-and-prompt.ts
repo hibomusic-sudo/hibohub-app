@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating an AI music video or dynamic audio visualizer based on a text prompt and an existing song.
  */
 
-import { ai, googleAI } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { Buffer } from 'buffer';
 
@@ -77,7 +77,7 @@ const generateVideoFromSongAndPromptFlow = ai.defineFlow(
     }
 
     let { operation } = await ai.generate({
-      model: googleAI.model('veo-3.0-generate-preview'),
+      model: 'googleai/veo-3.0-generate-preview',
       prompt: input.videoStylePrompt,
       config: {
         numberOfVideos: 1,
