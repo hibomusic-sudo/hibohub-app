@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -5,12 +6,13 @@ import { Check, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/lib/app-context';
+import { cn } from '@/lib/utils';
 
 export function PremiumGate({ onBack }: { onBack: () => void }) {
   const { setSubscribed } = useApp();
 
-  const handleSubscribe = () => {
-    setSubscribed(true);
+  const handleSubscribe = async () => {
+    await setSubscribed(true);
     onBack();
   };
 

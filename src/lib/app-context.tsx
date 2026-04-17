@@ -1,22 +1,13 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useUser, useFirestore, useDoc } from '@/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
 
 export type Language = 'so' | 'ar' | 'en';
 export type UserRole = 'Regular' | 'Artist' | 'MusicDesigner';
-
-export type LibraryItem = {
-  id: string;
-  type: 'song' | 'video' | 'voice' | 'upload';
-  title: string;
-  url: string;
-  createdAt: string;
-  style?: string;
-  genre?: string;
-  isPublic?: boolean;
-};
 
 interface AppContextType {
   isSubscribed: boolean;
@@ -24,8 +15,8 @@ interface AppContextType {
   language: Language;
   userProfile: any | null;
   setLanguage: (lang: Language) => void;
-  setSubscribed: (val: boolean) => void;
-  useGeneration: () => boolean;
+  setSubscribed: (val: boolean) => Promise<void>;
+  useGeneration: () => Promise<boolean>;
   t: (key: string) => string;
 }
 
@@ -57,9 +48,9 @@ const translations: Record<Language, Record<string, string>> = {
     login: 'Soo gal',
     signup: 'Is-diiwaangeli',
     logout: 'Ka bax',
-    public: 'Public (Dadka oo dhan)',
-    private: 'Private (Kaliya adiga)',
-    upload_song: 'Geli Hees (Upload)',
+    public: 'Public',
+    private: 'Private',
+    upload_song: 'Geli Hees',
     title_label: 'Ciwaanka Heesta'
   },
   ar: {
@@ -133,7 +124,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const db = useFirestore();
-  const [isSubscribed, setSubscribed] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [freeGenerationsUsed, setFreeGenerationsUsed] = useState(0);
   const [language, setLanguage] = useState<Language>('so');
   const [userProfile, setUserProfile] = useState<any | null>(null);
@@ -143,11 +134,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const userDocRef = doc(db, 'users', user.uid);
       getDoc(userDocRef).then((snapshot) => {
         if (snapshot.exists()) {
-          setUserProfile(snapshot.data());
-          setSubscribed(snapshot.data().isPremiumSubscriber || false);
-          setFreeGenerationsUsed(snapshot.data().freeGenerationsUsed || 0);
+          const data = snapshot.data();
+          setUserProfile(data);
+          setIsSubscribed(data.isPremiumSubscriber || false);
+          setFreeGenerationsUsed(data.freeGenerationsUsed || 0);
         } else {
-          // Initialize profile if it doesn't exist
           const newProfile = {
             id: user.uid,
             externalAuthId: user.uid,
@@ -182,12 +173,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('hibo_hub_lang', lang);
   };
 
-  const useGeneration = () => {
+  const handleSetSubscribed = async (val: boolean) => {
+    if (!user || !db) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        isPremiumSubscriber: val
+      });
+      setIsSubscribed(val);
+      toast({ title: "Premium Activated!", description: "You now have unlimited access." });
+    } catch (e) {
+      toast({ title: "Error", description: "Could not update subscription.", variant: "destructive" });
+    }
+  };
+
+  const useGeneration = async () => {
     if (isSubscribed) return true;
     if (freeGenerationsUsed < 1) {
-      setFreeGenerationsUsed(prev => prev + 1);
+      const nextUsed = freeGenerationsUsed + 1;
+      setFreeGenerationsUsed(nextUsed);
       if (user && db) {
-        setDoc(doc(db, 'users', user.uid), { freeGenerationsUsed: freeGenerationsUsed + 1 }, { merge: true });
+        await updateDoc(doc(db, 'users', user.uid), {
+          freeGenerationsUsed: nextUsed
+        });
       }
       return true;
     }
@@ -203,7 +210,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       language,
       userProfile,
       setLanguage: setLanguageAndSave,
-      setSubscribed,
+      setSubscribed: handleSetSubscribed,
       useGeneration,
       t
     }}>

@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock } from 'lucide-react';
-import { useApp, LibraryItem } from '@/lib/app-context';
+import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock, Check } from 'lucide-react';
+import { useApp } from '@/lib/app-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, deleteDoc, collection } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
   const db = useFirestore();
   const { t } = useApp();
   const [activeItem, setActiveItem] = useState<any | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const songsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -37,6 +38,14 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
 
   const handleDownload = (item: any) => {
     toast({ title: "Downloading...", description: `${item.title} has started downloading.` });
+  };
+
+  const handleShare = (item: any) => {
+    const shareText = `Check out my song on Hibo Hub: ${item.title}`;
+    navigator.clipboard.writeText(shareText);
+    setIsCopied(true);
+    toast({ title: "Copied!", description: "Link copied to clipboard." });
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleRemove = async (item: any) => {
@@ -74,36 +83,37 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
       </header>
 
       {activeItem && (
-        <div className="p-6 rounded-[2rem] premium-gradient glow-purple animate-in slide-in-from-top-4 duration-500">
+        <div className="p-6 rounded-[2rem] premium-gradient glow-purple animate-in slide-in-from-top-4 duration-500 shadow-2xl">
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-white/70">Now Playing</p>
               <h2 className="text-xl font-bold text-white truncate max-w-[200px]">{activeItem.title}</h2>
             </div>
-            <button onClick={() => handleRemove(activeItem)} className="text-white/70 hover:text-white">
+            <button onClick={() => handleRemove(activeItem)} className="text-white/70 hover:text-white p-2">
               <Trash2 className="w-5 h-5" />
             </button>
           </div>
 
           <div className="aspect-video w-full bg-black/40 rounded-xl mb-6 flex items-center justify-center overflow-hidden">
              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-glow-pulse">
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-glow-pulse shadow-xl">
                   <Music className="w-10 h-10 text-white" />
                 </div>
              </div>
           </div>
 
           <div className="flex justify-between gap-4">
-            <Button onClick={() => handleDownload(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0">
+            <Button onClick={() => handleDownload(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0 rounded-2xl h-12">
               <Download className="w-4 h-4 mr-2" /> Download
             </Button>
-            <Button variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0">
-              <Share2 className="w-4 h-4 mr-2" /> Share
+            <Button onClick={() => handleShare(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0 rounded-2xl h-12">
+              {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />} 
+              {isCopied ? "Copied" : "Share"}
             </Button>
           </div>
           
-          <div className="mt-4">
-             <audio src={activeItem.audioFileUrl || activeItem.url} controls className="w-full h-8 opacity-60" />
+          <div className="mt-6 bg-black/20 p-2 rounded-2xl">
+             <audio src={activeItem.audioFileUrl || activeItem.url} controls className="w-full h-8 opacity-90" />
           </div>
         </div>
       )}
@@ -121,8 +131,8 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
             <Card 
               key={item.id} 
               className={cn(
-                "p-4 glass-card border-border hover:border-primary/50 cursor-pointer transition-all group",
-                activeItem?.id === item.id ? "border-primary bg-primary/5" : ""
+                "p-4 glass-card border-border hover:border-primary/50 cursor-pointer transition-all group active:scale-[0.98]",
+                activeItem?.id === item.id ? "border-primary bg-primary/5 ring-1 ring-primary/30" : ""
               )}
               onClick={() => setActiveItem(item)}
             >
@@ -144,7 +154,7 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
                     {item.type === 'song' ? (item.genre || 'AI Gen') : 'User Upload'}
                   </p>
                 </div>
-                <button className="p-2 text-muted-foreground hover:text-primary">
+                <button className="p-2 text-muted-foreground group-hover:text-primary transition-colors">
                   <Play className="w-5 h-5 fill-current" />
                 </button>
               </div>
