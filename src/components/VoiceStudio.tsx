@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -10,7 +11,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
-export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
+export function VoiceStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
   const [isRecording, setIsRecording] = useState(false);
@@ -29,7 +30,9 @@ export function VoiceStudio({ onShowPremium }: { onShowPremium: () => void }) {
   };
 
   const handleCloneVoice = async () => {
+    if (onRequireAuth()) return;
     if (!user || !db) return;
+    
     if (!useGeneration()) {
       onShowPremium();
       return;

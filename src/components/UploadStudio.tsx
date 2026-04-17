@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -10,8 +11,9 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
-export function UploadStudio({ onShowPremium }: { onShowPremium: () => void }) {
+export function UploadStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
   const { t } = useApp();
@@ -21,7 +23,9 @@ export function UploadStudio({ onShowPremium }: { onShowPremium: () => void }) {
   const [fileSelected, setFileSelected] = useState(false);
 
   const handleUpload = async () => {
+    if (onRequireAuth()) return;
     if (!user) return;
+    
     if (!title.trim()) {
       toast({ title: "Error", description: "Please enter a title.", variant: "destructive" });
       return;
@@ -114,8 +118,4 @@ export function UploadStudio({ onShowPremium }: { onShowPremium: () => void }) {
       </div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

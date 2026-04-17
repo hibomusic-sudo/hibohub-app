@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -12,7 +13,7 @@ import { Library } from '@/components/Library';
 import { PremiumGate } from '@/components/PremiumGate';
 import { AuthScreen } from '@/components/AuthScreen';
 import { Toaster } from '@/components/ui/toaster';
-import { Sparkles, Languages, LogOut } from 'lucide-react';
+import { Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -30,6 +31,7 @@ function AppContent() {
   const auth = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('music');
   const [showPremium, setShowPremium] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const { language, setLanguage, t } = useApp();
 
   if (isUserLoading) {
@@ -40,18 +42,22 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return <AuthScreen />;
-  }
+  const handleRequireAuth = () => {
+    if (!user) {
+      setShowAuth(true);
+      return true;
+    }
+    return false;
+  };
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'music': return <MusicStudio onShowPremium={() => setShowPremium(true)} />;
-      case 'video': return <VideoStudio onShowPremium={() => setShowPremium(true)} />;
-      case 'voice': return <VoiceStudio onShowPremium={() => setShowPremium(true)} />;
-      case 'upload': return <UploadStudio onShowPremium={() => setShowPremium(true)} />;
-      case 'library': return <Library onShowPremium={() => setShowPremium(true)} />;
-      default: return <MusicStudio onShowPremium={() => setShowPremium(true)} />;
+      case 'music': return <MusicStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'video': return <VideoStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'voice': return <VoiceStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'upload': return <UploadStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      default: return <MusicStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
     }
   };
 
@@ -95,12 +101,21 @@ function AppContent() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button 
-            onClick={handleLogout}
-            className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-destructive/20 transition-all text-muted-foreground hover:text-destructive"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          {user ? (
+            <button 
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-destructive/20 transition-all text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          ) : (
+            <button 
+              onClick={() => setShowAuth(true)}
+              className="w-10 h-10 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center hover:bg-primary/40 transition-all text-primary"
+            >
+              <UserIcon className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -117,6 +132,7 @@ function AppContent() {
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
       
       {showPremium && <PremiumGate onBack={() => setShowPremium(false)} />}
+      {showAuth && !user && <AuthScreen onBack={() => setShowAuth(false)} />}
       <Toaster />
     </div>
   );

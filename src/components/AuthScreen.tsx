@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -8,10 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useApp, UserRole } from '@/lib/app-context';
-import { Sparkles, Mail, Lock, User, Music, Headphones } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Music, Headphones, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-export function AuthScreen() {
+interface AuthScreenProps {
+  onBack?: () => void;
+}
+
+export function AuthScreen({ onBack }: AuthScreenProps) {
   const auth = useAuth();
   const db = useFirestore();
   const { t } = useApp();
@@ -46,6 +51,7 @@ export function AuthScreen() {
           createdAt: new Date().toISOString()
         });
       }
+      if (onBack) onBack();
     } catch (error: any) {
       toast({ title: "Auth Error", description: error.message, variant: "destructive" });
     } finally {
@@ -57,6 +63,7 @@ export function AuthScreen() {
     setIsLoading(true);
     try {
       await signInAnonymously(auth);
+      if (onBack) onBack();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -65,10 +72,19 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background relative overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
       {/* Dynamic BG */}
       <div className="absolute top-[-20%] -right-[30%] w-[100%] aspect-square rounded-full bg-primary/10 blur-[140px] animate-pulse" />
       <div className="absolute bottom-[10%] -left-[40%] w-[80%] aspect-square rounded-full bg-accent/10 blur-[120px]" />
+
+      {onBack && (
+        <button 
+          onClick={onBack}
+          className="absolute top-10 right-10 p-2 text-muted-foreground hover:text-white transition-colors"
+        >
+          <X className="w-8 h-8" />
+        </button>
+      )}
 
       <div className="relative z-10 w-full max-w-sm space-y-8 text-center">
         <div className="inline-block p-4 rounded-3xl premium-gradient glow-purple rotate-3 mb-4">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-export function Library({ onShowPremium }: { onShowPremium: () => void }) {
+export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
   const { t } = useApp();
@@ -45,6 +46,25 @@ export function Library({ onShowPremium }: { onShowPremium: () => void }) {
     if (activeItem?.id === item.id) setActiveItem(null);
     toast({ title: "Removed", description: "Item deleted from library." });
   };
+
+  if (!user) {
+    return (
+      <div className="py-20 text-center space-y-6 animate-in fade-in duration-500">
+        <div className="w-20 h-20 rounded-full bg-secondary mx-auto flex items-center justify-center">
+          <Lock className="w-10 h-10 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold">Kaydkaagu waa xiran yahay</h2>
+          <p className="text-muted-foreground text-sm max-w-[240px] mx-auto">
+            Fadlan soo gal si aad u aragto heesaha aad abuurtay ama aad soo gelisay.
+          </p>
+        </div>
+        <Button onClick={() => onRequireAuth()} className="premium-gradient glow-purple rounded-xl font-bold">
+          Soo Gal Hadda
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-32">

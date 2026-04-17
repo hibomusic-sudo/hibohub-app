@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -14,7 +15,7 @@ import { cn } from '@/lib/utils';
 
 const STYLES = ['Cinematic', 'Anime', 'Realistic', 'Cyberpunk', 'Abstract'];
 
-export function VideoStudio({ onShowPremium }: { onShowPremium: () => void }) {
+export function VideoStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
   const [stylePrompt, setStylePrompt] = useState('');
@@ -31,7 +32,9 @@ export function VideoStudio({ onShowPremium }: { onShowPremium: () => void }) {
   const availableSongs = songs || [];
 
   const handleGenerate = async () => {
+    if (onRequireAuth()) return;
     if (!user || !db) return;
+    
     if (availableSongs.length === 0) {
       toast({ title: "No Songs", description: "First, generate a song in the Music Studio.", variant: "destructive" });
       return;

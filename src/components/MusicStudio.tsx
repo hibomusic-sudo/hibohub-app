@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -35,7 +36,7 @@ const GENRE_CATEGORIES = [
   }
 ];
 
-export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
+export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
   const [prompt, setPrompt] = useState('');
@@ -44,7 +45,9 @@ export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
   const { useGeneration, t } = useApp();
 
   const handleGenerate = async () => {
+    if (onRequireAuth()) return;
     if (!user) return;
+    
     if (!prompt.trim()) {
       toast({ title: "Prompt missing", description: "Fadlan qor mawduuca heesta.", variant: "destructive" });
       return;
