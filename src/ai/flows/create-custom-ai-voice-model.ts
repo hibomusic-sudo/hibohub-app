@@ -4,7 +4,7 @@
  * @fileOverview This file implements a Genkit flow for creating a custom AI voice model from a user's voice sample.
  */
 
-import { ai, googleAI } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const CreateCustomAiVoiceModelInputSchema = z.object({
@@ -24,7 +24,7 @@ export type CreateCustomAiVoiceModelOutput = z.infer<typeof CreateCustomAiVoiceM
 
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
-  model: googleAI.model('gemini-1.5-flash'),
+  model: 'googleai/gemini-1.5-flash-latest',
   input: { schema: CreateCustomAiVoiceModelInputSchema },
   output: { schema: CreateCustomAiVoiceModelOutputSchema },
   prompt: `Process the provided voice sample to simulate a custom AI voice model creation.
