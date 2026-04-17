@@ -40,9 +40,13 @@ const GENRE_CATEGORIES = [
   }
 ];
 
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { useFirebaseApp } from '@/firebase';
+
 export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
+  const firebaseApp = useFirebaseApp();
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('Dhaanto');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -71,11 +75,20 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
       });
       
       const songId = Date.now().toString();
+      
+      // Upload base64 audio to Firebase Storage
+      const storage = getStorage(firebaseApp);
+      const storageRef = ref(storage, `users/${user.uid}/songs/${songId}.wav`);
+      
+      toast({ title: "Kaydinaya...", description: "Heesta ayaa lagu shubayaa Storage-ka..." });
+      await uploadString(storageRef, result.songDataUri, 'data_url');
+      const downloadUrl = await getDownloadURL(storageRef);
+
       const songData = {
         id: songId,
         userId: user.uid,
         title: prompt.slice(0, 30) + '...',
-        audioFileUrl: result.songDataUri,
+        audioFileUrl: downloadUrl, // Store the small URL instead of the massive Base64 string!
         genreId: selectedStyle,
         genre: selectedStyle,
         prompt: prompt,
@@ -110,6 +123,15 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
 
       <div className="space-y-6">
         <div className="relative group">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Mawduuca ✍️</label>
+            <button 
+              onClick={() => setPrompt("Hees jaceyl ah oo gaaban, 10 ilbiriqsi oo kaliya, garaac degdeg ah iyo cod macaan.")}
+              className="text-[10px] bg-primary/20 text-primary px-3 py-1 rounded-full hover:bg-primary/30 transition-all font-bold flex items-center gap-1 shadow-lg border border-primary/20"
+            >
+              🎁 Tusaale (Tijaabo 10 Sekan)
+            </button>
+          </div>
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
           <Textarea 
             placeholder={t('prompt_placeholder')}

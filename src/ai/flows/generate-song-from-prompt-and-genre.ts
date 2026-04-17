@@ -52,7 +52,7 @@ async function toWav(
  */
 const songLyricsPrompt = ai.definePrompt({
   name: 'songLyricsPrompt',
-  model: googleAI.model('gemini-2.0-flash'),
+  model: googleAI.model('gemini-2.5-flash'),
   input: { schema: GenerateSongFromPromptAndGenreInputSchema },
   output: { 
     schema: z.object({

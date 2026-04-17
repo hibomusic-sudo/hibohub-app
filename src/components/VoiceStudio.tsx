@@ -70,8 +70,8 @@ export function VoiceStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-32">
       <header className="space-y-2">
-        <h1 className="font-headline text-3xl font-bold text-glow-purple">Codkaaga Sameyso</h1>
-        <p className="text-muted-foreground text-sm">Duub codkaaga si AI-gu uu ugu heeso codkaaga oo kale.</p>
+        <h1 className="font-headline text-3xl font-bold text-glow-purple">Codkaaga Sameyso 🎙️</h1>
+        <p className="text-muted-foreground text-sm">Duub codkaaga si AI-gu uu ugu heeso codkaaga oo kale. 🪄🗣️</p>
       </header>
 
       <div className="flex flex-col items-center justify-center p-12 rounded-[2rem] glass-card border-white/10 relative overflow-hidden">

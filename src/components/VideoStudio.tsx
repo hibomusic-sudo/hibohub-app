@@ -85,8 +85,8 @@ export function VideoStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-32">
       <header className="space-y-2">
-        <h1 className="font-headline text-3xl font-bold text-glow-teal">Muuqaal Sameeye</h1>
-        <p className="text-muted-foreground text-sm">Samee muuqaal casri ah oo raacaya garaaca heestaada.</p>
+        <h1 className="font-headline text-3xl font-bold text-glow-teal">Muuqaal Sameeye 🎬</h1>
+        <p className="text-muted-foreground text-sm">Samee muuqaal casri ah oo raacaya garaaca heestaada. ✨🎥</p>
       </header>
 
       {availableSongs.length > 0 ? (
@@ -107,13 +107,24 @@ export function VideoStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
       )}
 
       <div className="space-y-4">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Style Details</label>
-        <Textarea 
-          placeholder="Tusaale: Qof dumar ah oo badda agteeda taagan, qorraxdu dhacayso, midabyo diirran..." 
-          className="min-h-[100px] bg-card/40 border-border focus:border-accent transition-all resize-none"
-          value={stylePrompt}
-          onChange={(e) => setStylePrompt(e.target.value)}
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Style Details 🎨</label>
+          <button 
+            onClick={() => setStylePrompt("Qof dumar ah oo badda agteeda taagan, qorraxdu dhacayso, midabyo diirran, muuqaal 10 sekan ah oo qurux badan")}
+            className="text-[10px] bg-accent/20 text-accent px-3 py-1 rounded-full hover:bg-accent/30 transition-all font-bold flex items-center gap-1"
+          >
+            ✨ Tusaale (10 Sekan)
+          </button>
+        </div>
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-accent to-primary rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+          <Textarea 
+            placeholder="Tusaale: Qof dumar ah oo badda agteeda taagan, qorraxdu dhacayso, midabyo diirran..." 
+            className="relative min-h-[120px] bg-card/60 backdrop-blur-xl border-white/5 focus:border-accent/50 transition-all resize-none rounded-2xl text-lg p-6 shadow-2xl"
+            value={stylePrompt}
+            onChange={(e) => setStylePrompt(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="space-y-4">
