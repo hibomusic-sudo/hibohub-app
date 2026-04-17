@@ -1,30 +1,56 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Play, Download, Share2, Music, Video, Mic, Trash2 } from 'lucide-react';
+import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock } from 'lucide-react';
 import { useApp, LibraryItem } from '@/lib/app-context';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, deleteDoc, collection } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export function Library({ onShowPremium }: { onShowPremium: () => void }) {
-  const { library, removeFromLibrary } = useApp();
-  const [activeItem, setActiveItem] = useState<LibraryItem | null>(null);
+  const { user } = useUser();
+  const db = useFirestore();
+  const { t } = useApp();
+  const [activeItem, setActiveItem] = useState<any | null>(null);
 
-  const handleDownload = (item: LibraryItem) => {
-    toast({ title: "Soo dajinaya...", description: `${item.title} has started downloading.` });
+  const songsQuery = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return collection(db, 'users', user.uid, 'aiGeneratedSongs');
+  }, [db, user]);
+
+  const uploadsQuery = useMemoFirebase(() => {
+    if (!db || !user) return null;
+    return collection(db, 'users', user.uid, 'uploadedSongs');
+  }, [db, user]);
+
+  const { data: aiSongs } = useCollection(songsQuery);
+  const { data: uploads } = useCollection(uploadsQuery);
+
+  const libraryItems = [
+    ...(aiSongs?.map(s => ({ ...s, type: 'song' })) || []),
+    ...(uploads?.map(u => ({ ...u, type: 'upload' })) || [])
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const handleDownload = (item: any) => {
+    toast({ title: "Downloading...", description: `${item.title} has started downloading.` });
   };
 
-  const handleShare = (item: LibraryItem) => {
-    toast({ title: "Share", description: "Sharing to TikTok/Instagram..." });
+  const handleRemove = async (item: any) => {
+    if (!user || !db) return;
+    const colName = item.type === 'song' ? 'aiGeneratedSongs' : 'uploadedSongs';
+    await deleteDoc(doc(db, 'users', user.uid, colName, item.id));
+    if (activeItem?.id === item.id) setActiveItem(null);
+    toast({ title: "Removed", description: "Item deleted from library." });
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-32">
       <header className="space-y-2">
-        <h1 className="font-headline text-3xl font-bold text-glow-purple">Kaydkaaga</h1>
-        <p className="text-muted-foreground text-sm">Heesahaaga iyo muuqaaladaada aad halkan ka helaysaa.</p>
+        <h1 className="font-headline text-3xl font-bold text-glow-purple">{t('library')}</h1>
+        <p className="text-muted-foreground text-sm">Kaydkaaga heesaha iyo waxyaabaha aad abuurtay.</p>
       </header>
 
       {activeItem && (
@@ -34,50 +60,44 @@ export function Library({ onShowPremium }: { onShowPremium: () => void }) {
               <p className="text-xs font-bold uppercase tracking-widest text-white/70">Now Playing</p>
               <h2 className="text-xl font-bold text-white truncate max-w-[200px]">{activeItem.title}</h2>
             </div>
-            <button onClick={() => setActiveItem(null)} className="text-white/70 hover:text-white">
-              <Trash2 className="w-5 h-5" onClick={() => removeFromLibrary(activeItem.id)} />
+            <button onClick={() => handleRemove(activeItem)} className="text-white/70 hover:text-white">
+              <Trash2 className="w-5 h-5" />
             </button>
           </div>
 
           <div className="aspect-video w-full bg-black/40 rounded-xl mb-6 flex items-center justify-center overflow-hidden">
-             {activeItem.type === 'video' ? (
-                <video src={activeItem.url} controls className="w-full h-full object-cover" />
-             ) : (
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-glow-pulse">
-                    <Music className="w-10 h-10 text-white" />
-                  </div>
+             <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center animate-glow-pulse">
+                  <Music className="w-10 h-10 text-white" />
                 </div>
-             )}
+             </div>
           </div>
 
           <div className="flex justify-between gap-4">
             <Button onClick={() => handleDownload(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0">
               <Download className="w-4 h-4 mr-2" /> Download
             </Button>
-            <Button onClick={() => handleShare(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0">
+            <Button variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0">
               <Share2 className="w-4 h-4 mr-2" /> Share
             </Button>
           </div>
           
-          {activeItem.type === 'song' && (
-            <div className="mt-4">
-               <audio src={activeItem.url} controls className="w-full h-8 opacity-60" />
-            </div>
-          )}
+          <div className="mt-4">
+             <audio src={activeItem.audioFileUrl || activeItem.url} controls className="w-full h-8 opacity-60" />
+          </div>
         </div>
       )}
 
-      {library.length === 0 ? (
+      {libraryItems.length === 0 ? (
         <div className="py-20 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-secondary mx-auto flex items-center justify-center">
-            <LibraryIcon className="w-8 h-8 text-muted-foreground" />
+            <Music className="w-8 h-8 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground text-sm">Wax madow ah kuma jiraan kaydkaaga.</p>
+          <p className="text-muted-foreground text-sm">{t('empty_library')}</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {library.map((item) => (
+          {libraryItems.map((item) => (
             <Card 
               key={item.id} 
               className={cn(
@@ -89,15 +109,20 @@ export function Library({ onShowPremium }: { onShowPremium: () => void }) {
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                  item.type === 'song' ? "bg-primary/20 text-primary" : 
-                  item.type === 'video' ? "bg-accent/20 text-accent" : "bg-purple-500/20 text-purple-500"
+                  item.type === 'song' ? "bg-primary/20 text-primary" : "bg-accent/20 text-accent"
                 )}>
-                  {item.type === 'song' ? <Music className="w-6 h-6" /> : 
-                   item.type === 'video' ? <Video className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                  <Music className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold truncate text-sm">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold truncate text-sm">{item.title}</h3>
+                    {item.isPublic !== undefined && (
+                      item.isPublic ? <Globe className="w-3 h-3 text-accent" /> : <Lock className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                    {item.type === 'song' ? (item.genre || 'AI Gen') : 'User Upload'}
+                  </p>
                 </div>
                 <button className="p-2 text-muted-foreground hover:text-primary">
                   <Play className="w-5 h-5 fill-current" />
@@ -109,16 +134,4 @@ export function Library({ onShowPremium }: { onShowPremium: () => void }) {
       )}
     </div>
   );
-}
-
-function LibraryIcon(props: any) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" />
-    </svg>
-  );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

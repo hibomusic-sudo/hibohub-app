@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -6,9 +5,12 @@ import { Sparkles, Music, Drum, Mic2, Heart, Radio, Flame, Globe, Zap } from 'lu
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/lib/app-context';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { generateSongFromPromptAndGenre } from '@/ai/flows/generate-song-from-prompt-and-genre';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 const GENRE_CATEGORIES = [
   {
@@ -34,12 +36,15 @@ const GENRE_CATEGORIES = [
 ];
 
 export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
+  const { user } = useUser();
+  const db = useFirestore();
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('Dhaanto');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { useGeneration, addToLibrary, t, language } = useApp();
+  const { useGeneration, t } = useApp();
 
   const handleGenerate = async () => {
+    if (!user) return;
     if (!prompt.trim()) {
       toast({ title: "Prompt missing", description: "Fadlan qor mawduuca heesta.", variant: "destructive" });
       return;
@@ -57,19 +62,25 @@ export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
         genre: selectedStyle as any
       });
       
-      addToLibrary({
-        id: Date.now().toString(),
-        type: 'song',
+      const songId = Date.now().toString();
+      const songData = {
+        id: songId,
+        userId: user.uid,
         title: prompt.slice(0, 30) + '...',
-        url: result.songDataUri,
-        createdAt: new Date().toISOString(),
-        genre: selectedStyle
-      });
+        audioFileUrl: result.songDataUri,
+        genreId: selectedStyle,
+        genre: selectedStyle,
+        prompt: prompt,
+        durationSeconds: 60,
+        createdAt: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'users', user.uid, 'aiGeneratedSongs', songId), songData);
 
       toast({ title: "Guul!", description: "Heestaadii waa diyaar!" });
       setPrompt('');
-    } catch (error) {
-      toast({ title: "Cillad", description: "Something went wrong. Try again.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Cillad", description: error.message || "Something went wrong.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -94,7 +105,7 @@ export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
           <Textarea 
             placeholder={t('prompt_placeholder')}
-            className="relative min-h-[160px] bg-card/60 backdrop-blur-xl border-white/5 focus:border-primary/50 transition-all resize-none rounded-2xl text-lg p-6"
+            className="relative min-h-[160px] bg-card/60 backdrop-blur-xl border-white/5 focus:border-primary/50 transition-all resize-none rounded-2xl text-lg p-6 shadow-2xl"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
@@ -137,11 +148,11 @@ export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
         </div>
       </div>
 
-      <div className="fixed bottom-24 left-6 right-6 z-40 max-w-md mx-auto">
+      <div className="fixed bottom-32 left-6 right-6 z-40 max-w-md mx-auto">
         <Button 
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="w-full h-20 rounded-[2rem] premium-gradient text-xl font-bold glow-purple group transition-all active:scale-95 overflow-hidden relative shadow-2xl shadow-primary/40"
+          className="w-full h-20 rounded-[2.5rem] premium-gradient text-xl font-bold glow-purple group transition-all active:scale-95 overflow-hidden relative shadow-2xl shadow-primary/40 border-t border-white/20"
         >
           {isGenerating ? (
             <div className="flex items-center gap-3">
@@ -159,8 +170,4 @@ export function MusicStudio({ onShowPremium }: { onShowPremium: () => void }) {
       </div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }
