@@ -8,7 +8,7 @@
  * - CreateCustomAiVoiceModelOutput - The return type for the createCustomAiVoiceModel function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, googleAI } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // Input Schema
@@ -38,7 +38,7 @@ export async function createCustomAiVoiceModel(
 // Genkit Prompt
 const customVoiceModelPrompt = ai.definePrompt({
   name: 'customVoiceModelPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: googleAI.model('gemini-1.5-flash'),
   input: { schema: CreateCustomAiVoiceModelInputSchema },
   output: { schema: CreateCustomAiVoiceModelOutputSchema },
   prompt: `You are an AI assistant tasked with processing a user's voice sample to create a custom AI voice model.
