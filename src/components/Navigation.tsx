@@ -16,11 +16,11 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   const { t, userProfile } = useApp();
   
   const tabs = [
-    { id: 'music', label: t('music_studio').split(' ')[0], icon: Music },
-    { id: 'video', label: t('video_studio').split(' ')[0], icon: Video },
-    { id: 'voice', label: t('voice_studio').split(' ')[0], icon: Mic },
-    { id: 'upload', label: 'Upload', icon: Upload },
-    { id: 'library', label: t('library').split(' ')[0], icon: Library },
+    { id: 'music', label: 'MUSIC', icon: Music },
+    { id: 'video', label: 'VIDEO', icon: Video },
+    { id: 'voice', label: 'VOICE', icon: Mic },
+    { id: 'upload', label: 'UPLOAD', icon: Upload },
+    { id: 'library', label: 'YOUR', icon: Library },
   ] as const;
 
   return (

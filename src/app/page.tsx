@@ -12,6 +12,7 @@ import { UploadStudio } from '@/components/UploadStudio';
 import { Library } from '@/components/Library';
 import { PremiumGate } from '@/components/PremiumGate';
 import { AuthScreen } from '@/components/AuthScreen';
+import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -125,8 +126,9 @@ function AppContent() {
         <div className="absolute bottom-[10%] -left-[40%] w-[80%] aspect-square rounded-full bg-accent/10 blur-[120px]" />
       </div>
 
-      <main className="flex-1 pb-40">
+      <main className="flex-1 pb-8">
         {renderContent()}
+        <Footer />
       </main>
 
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
