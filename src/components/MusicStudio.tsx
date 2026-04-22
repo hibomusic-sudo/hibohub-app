@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
-import { Sparkles, Music, Drum, Mic2, Heart, Radio, Flame, Globe, Zap, Square, Play, Pause } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, Music, Drum, Mic2, Heart, Radio, Flame, Globe, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/lib/app-context';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { generateReplicateMusic } from '@/ai/flows/generate-replicate-music';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useFirebaseApp } from '@/firebase';
-import { GoogleGenAI } from '@google/genai';
-import { getGeminiLiveKey } from '@/ai/actions/get-gemini-key';
-import { PCMPlayer } from '@/lib/pcm-player';
 
 const GENRE_CATEGORIES = [
   {
@@ -50,62 +48,8 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('Dhaanto');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
   const { useGeneration, t } = useApp();
-  
-  const sessionRef = useRef<any>(null);
-  const playerRef = useRef<PCMPlayer | null>(null);
-
-  const stopStream = async () => {
-    if (sessionRef.current) {
-      try {
-        await sessionRef.current.stop();
-        // Wait a bit to ensure session is fully closed
-        setTimeout(() => {
-          sessionRef.current = null;
-        }, 100);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    
-    setIsStreaming(false);
-    setIsGenerating(false);
-
-    if (playerRef.current && user) {
-      toast({ title: "Kaydinaya...", description: "Heesta ayaa lagu shubayaa Storage-ka..." });
-      try {
-        const wavBlob = playerRef.current.getWavBlob();
-        const songId = Date.now().toString();
-        const storage = getStorage(firebaseApp);
-        const storageRefPath = ref(storage, `users/${user.uid}/songs/${songId}.wav`);
-        
-        await uploadBytes(storageRefPath, wavBlob);
-        const downloadUrl = await getDownloadURL(storageRefPath);
-
-        const songData = {
-          id: songId,
-          userId: user.uid,
-          title: prompt.slice(0, 30) || 'Suno Generation',
-          audioFileUrl: downloadUrl,
-          genreId: selectedStyle,
-          genre: selectedStyle,
-          prompt: prompt,
-          durationSeconds: 60,
-          createdAt: new Date().toISOString()
-        };
-
-        await setDoc(doc(db, 'users', user.uid, 'aiGeneratedSongs', songId), songData);
-        toast({ title: "Guul!", description: "Heestaadii waa diyaar!" });
-      } catch (e: any) {
-        toast({ title: "Cillad", description: e.message || "Failed to save song.", variant: "destructive" });
-      }
-      
-      playerRef.current.stop();
-      playerRef.current = null;
-    }
-  };
 
   const handleGenerate = async () => {
     if (onRequireAuth()) return;
@@ -121,72 +65,43 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
       return;
     }
 
-    if (isStreaming) {
-      await stopStream();
-      return;
-    }
-
     setIsGenerating(true);
     try {
-      const apiKey = await getGeminiLiveKey();
-      const client = new GoogleGenAI({ apiKey, apiVersion: "v1alpha" });
+      const result = await generateReplicateMusic({
+        prompt,
+        genre: selectedStyle as any
+      });
       
-      playerRef.current = new PCMPlayer(44100);
+      const songId = Date.now().toString();
+      
+      // Upload base64 audio to Firebase Storage
+      const storage = getStorage(firebaseApp);
+      const storageRef = ref(storage, `users/${user.uid}/songs/${songId}.wav`);
+      
+      toast({ title: "Kaydinaya...", description: "Heesta ayaa lagu shubayaa Storage-ka..." });
+      await uploadString(storageRef, result.audioBase64, 'data_url');
+      const downloadUrl = await getDownloadURL(storageRef);
 
-      const session = await client.live.music.connect({
-        model: "models/lyria-realtime-exp",
-        callbacks: {
-          onmessage: (message: any) => {
-            console.log("Received message:", message);
-            if (message.error) {
-              toast({ title: "API Error", description: JSON.stringify(message.error), variant: "destructive" });
-              setIsGenerating(false);
-              stopStream();
-              return;
-            }
-            if (message.serverContent?.audioChunks) {
-              if (!isStreaming) setIsStreaming(true);
-              for (const chunk of message.serverContent.audioChunks) {
-                playerRef.current?.feedBase64(chunk.data);
-              }
-            }
-          },
-          onerror: (error: any) => {
-            console.error("music session error:", error);
-            toast({ title: "WebSocket Error", description: error?.message || "Waxaa cilladi ku timid stream-ka.", variant: "destructive" });
-            setIsGenerating(false);
-            stopStream();
-          },
-          onclose: () => {
-            console.log("Lyria RealTime stream closed.");
-            setIsGenerating(false);
-            stopStream();
-          },
-        },
-      });
+      const songData = {
+        id: songId,
+        userId: user.uid,
+        title: prompt.slice(0, 30) + '...',
+        audioFileUrl: downloadUrl, // Store the small URL
+        genreId: selectedStyle,
+        genre: selectedStyle,
+        prompt: prompt,
+        durationSeconds: 60,
+        createdAt: new Date().toISOString()
+      };
 
-      sessionRef.current = session;
+      await setDoc(doc(db, 'users', user.uid, 'aiGeneratedSongs', songId), songData);
 
-      await session.setMusicGenerationConfig({
-        musicGenerationConfig: {
-          bpm: 90,
-          temperature: 1.0,
-          audioFormat: "pcm16",
-          sampleRateHz: 44100,
-        },
-      });
-
-      await session.setWeightedPrompts({
-        weightedPrompts: [
-          { text: `${selectedStyle} style, ${prompt}`, weight: 1.0 },
-        ],
-      });
-
-      await session.play();
+      toast({ title: "Guul!", description: "Heestaadii waa diyaar!" });
+      setPrompt('');
     } catch (error: any) {
       toast({ title: "Cillad", description: error.message || "Something went wrong.", variant: "destructive" });
+    } finally {
       setIsGenerating(false);
-      setIsStreaming(false);
     }
   };
 
@@ -209,10 +124,10 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
           <div className="flex items-center justify-between mb-3 px-1">
             <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Mawduuca ✍️</label>
             <button 
-              onClick={() => setPrompt("Hees jaceyl ah oo gaaban, garaac degdeg ah iyo cod macaan.")}
+              onClick={() => setPrompt("Hees jaceyl ah oo gaaban, 10 ilbiriqsi oo kaliya, garaac degdeg ah iyo cod macaan.")}
               className="text-[10px] bg-primary/20 text-primary px-3 py-1 rounded-full hover:bg-primary/30 transition-all font-bold flex items-center gap-1 shadow-lg border border-primary/20"
             >
-              🎁 Tusaale
+              🎁 Tusaale (Tijaabo 10 Sekan)
             </button>
           </div>
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
@@ -221,7 +136,6 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
             className="relative min-h-[160px] bg-card/60 backdrop-blur-xl border-white/5 focus:border-primary/50 transition-all resize-none rounded-2xl text-lg p-6 shadow-2xl"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            disabled={isStreaming || isGenerating}
           />
         </div>
 
@@ -236,7 +150,7 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                 <div className="flex items-center gap-3 px-1 relative z-10">
                   <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/20 shadow-xl glow-purple relative group-hover:scale-110 transition-transform">
-                    <img src={cat.image} className="w-full h-full object-cover" alt={cat.name} />
+                     <img src={cat.image} className="w-full h-full object-cover" alt={cat.name} />
                   </div>
                   <div>
                     <span className="text-sm font-black text-white/90 uppercase tracking-tight block">{cat.name}</span>
@@ -248,14 +162,12 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
                     {cat.styles.map((style) => (
                       <button
                         key={style}
-                        disabled={isStreaming || isGenerating}
                         onClick={() => setSelectedStyle(style)}
                         className={cn(
                           "px-5 py-3 rounded-xl text-xs font-bold transition-all border shrink-0",
                           selectedStyle === style 
                             ? "bg-primary text-white border-primary glow-purple scale-105" 
-                            : "bg-secondary/40 text-muted-foreground border-white/5 hover:bg-secondary/60 hover:border-white/10",
-                          (isStreaming || isGenerating) && "opacity-50 cursor-not-allowed"
+                            : "bg-secondary/40 text-muted-foreground border-white/5 hover:bg-secondary/60 hover:border-white/10"
                         )}
                       >
                         {style}
@@ -280,21 +192,13 @@ export function MusicStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
       <div className="fixed bottom-32 left-6 right-6 z-40 max-w-md mx-auto">
         <Button 
           onClick={handleGenerate}
-          className={cn(
-            "w-full h-20 rounded-[2.5rem] text-xl font-bold group transition-all active:scale-95 overflow-hidden relative shadow-2xl border-t border-white/20",
-            isStreaming ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/40 glow-red" : "premium-gradient glow-purple shadow-primary/40"
-          )}
+          disabled={isGenerating}
+          className="w-full h-20 rounded-[2.5rem] premium-gradient text-xl font-bold glow-purple group transition-all active:scale-95 overflow-hidden relative shadow-2xl shadow-primary/40 border-t border-white/20"
         >
-          {isStreaming ? (
-            <div className="flex items-center gap-3">
-              <Square className="w-7 h-7 fill-current" />
-              <span>Jooji Heesta (Stop Stream)</span>
-              <div className="absolute top-0 right-0 h-full w-full bg-white/10 animate-pulse" />
-            </div>
-          ) : isGenerating ? (
+          {isGenerating ? (
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-              <span className="animate-pulse">Isku Xiraya (Connecting)...</span>
+              <span className="animate-pulse">Abuuraya...</span>
             </div>
           ) : (
             <div className="flex items-center gap-3">
