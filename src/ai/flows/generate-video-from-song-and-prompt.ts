@@ -1,118 +1,80 @@
-
 'use server';
-/**
- * @fileOverview A Genkit flow for generating an AI music video or dynamic audio visualizer based on a text prompt and an existing song.
- */
 
-import { ai, googleAI } from '@/ai/genkit';
-import { z } from 'genkit';
-import { Buffer } from 'buffer';
+import Replicate from "replicate";
 
-const GenerateVideoFromSongAndPromptInputSchema = z.object({
-  songAudioDataUri: z
-    .string()
-    .describe(
-      "The generated song's audio as a data URI."
-    ),
-  videoStylePrompt: z
-    .string()
-    .describe(
-      "A text prompt describing the desired video style."
-    ),
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN,
 });
-export type GenerateVideoFromSongAndPromptInput = z.infer<
-  typeof GenerateVideoFromSongAndPromptInputSchema
->;
 
-const GenerateVideoFromSongAndPromptOutputSchema = z.object({
-  videoDataUri: z
-    .string()
-    .describe(
-      "The generated video as a data URI."
-    ),
-});
-export type GenerateVideoFromSongAndPromptOutput = z.infer<
-  typeof GenerateVideoFromSongAndPromptOutputSchema
->;
+export type GenerateVideoFromSongAndPromptInput = {
+  songAudioDataUri: string;
+  videoStylePrompt: string;
+};
 
-async function fetchAndEncodeVideoAsDataUri(
-  videoUrl: string,
-  apiKey: string,
-  contentType: string = 'video/mp4'
-): Promise<string> {
-  const fetch = (await import('node-fetch')).default;
-  const videoDownloadResponse = await fetch(`${videoUrl}&key=${apiKey}`);
-
-  if (
-    !videoDownloadResponse.ok ||
-    !videoDownloadResponse.body
-  ) {
-    throw new Error(
-      `Failed to fetch video: ${videoDownloadResponse.statusText}`
-    );
-  }
-
-  const arrayBuffer = await videoDownloadResponse.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  return `data:${contentType};base64,${buffer.toString('base64')}`;
-}
-
-const generateVideoFromSongAndPromptFlow = ai.defineFlow(
-  {
-    name: 'generateVideoFromSongAndPromptFlow',
-    inputSchema: GenerateVideoFromSongAndPromptInputSchema,
-    outputSchema: GenerateVideoFromSongAndPromptOutputSchema,
-  },
-  async input => {
-    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is missing. Video generation requires an API key.');
-    }
-
-    // Use Veo model for video generation
-    let { operation } = await ai.generate({
-      model: googleAI.model('veo-3.0-generate-preview'),
-      prompt: input.videoStylePrompt,
-      config: {
-        numberOfVideos: 1,
-      },
-    });
-
-    if (!operation) {
-      throw new Error('Failed to initiate video generation.');
-    }
-
-    while (!operation.done) {
-      operation = await ai.checkOperation(operation);
-      if (!operation.done) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-      }
-    }
-
-    if (operation.error) {
-      throw new Error(`Video Generation Error: ${operation.error.message}`);
-    }
-
-    const videoPart = operation.output?.message?.content.find(p => !!p.media);
-    if (!videoPart?.media?.url) {
-      throw new Error('Video generation completed but no video file was found.');
-    }
-
-    const videoDataUri = await fetchAndEncodeVideoAsDataUri(
-      videoPart.media.url,
-      geminiApiKey,
-      videoPart.media.contentType || 'video/mp4'
-    );
-
-    return {
-      videoDataUri,
-    };
-  }
-);
+export type GenerateVideoFromSongAndPromptOutput = {
+  videoDataUri: string;
+  videoUrl: string;
+};
 
 export async function generateVideoFromSongAndPrompt(
   input: GenerateVideoFromSongAndPromptInput
 ): Promise<GenerateVideoFromSongAndPromptOutput> {
-  return generateVideoFromSongAndPromptFlow(input);
+  const { videoStylePrompt } = input;
+
+  if (!process.env.REPLICATE_API_TOKEN) {
+    throw new Error("REPLICATE_API_TOKEN is not configured.");
+  }
+
+  if (!videoStylePrompt || videoStylePrompt.trim().length === 0) {
+    throw new Error("Video style prompt is required.");
+  }
+
+  try {
+    console.log("Generating video with MiniMax video-01:", videoStylePrompt.slice(0, 80));
+
+    const output = await replicate.run(
+      "minimax/video-01",
+      {
+        input: {
+          prompt: videoStylePrompt,
+        }
+      }
+    );
+
+    console.log("Video output type:", typeof output, "constructor:", (output as any)?.constructor?.name);
+
+    // Handle FileOutput or other formats
+    let videoUrl: string = "";
+    let base64Data: string;
+    const outputAny = output as any;
+
+    if (outputAny?.constructor?.name === 'FileOutput' || typeof outputAny?.url === 'function') {
+      videoUrl = outputAny.url().toString();
+    } else if (typeof output === 'string') {
+      videoUrl = output;
+    } else {
+      const str = String(output);
+      if (str.startsWith('http')) {
+        videoUrl = str;
+      } else {
+        throw new Error(`Unsupported video output: ${outputAny?.constructor?.name || typeof output}`);
+      }
+    }
+
+    console.log("Video URL:", videoUrl);
+
+    // Fetch video and convert to base64 data URI
+    const response = await fetch(videoUrl);
+    if (!response.ok) throw new Error(`Failed to fetch video: ${response.statusText}`);
+    const arrayBuffer = await response.arrayBuffer();
+    base64Data = Buffer.from(arrayBuffer).toString('base64');
+
+    return {
+      videoUrl,
+      videoDataUri: `data:video/mp4;base64,${base64Data}`,
+    };
+  } catch (error: any) {
+    console.error("Video Generation Error:", error);
+    throw new Error(`Failed to generate video: ${error.message}`);
+  }
 }
