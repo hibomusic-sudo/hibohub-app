@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame } from 'lucide-react';
+import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/lib/app-context';
-import { generateReplicateVoice } from '@/ai/flows/generate-replicate-voice';
+import { generateVoiceCover } from '@/ai/flows/generate-voice-cover';
 import { generateReplicateSong } from '@/ai/flows/generate-replicate-song';
-import { VOICE_OPTIONS, EMOTION_OPTIONS } from '@/lib/voice-options';
+import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useFirebaseApp } from '@/firebase';
@@ -43,10 +43,11 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   
   const [mode, setMode] = useState<Mode>('music');
   
-  // TTS (Voice) state
-  const [ttsText, setTtsText] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('Friendly_Person');
-  const [selectedVoiceEmotion, setSelectedVoiceEmotion] = useState('happy');
+  // Voice Cloning state
+  const { isRecording, audioBlob, audioUrl: recordedAudioUrl, startRecording, stopRecording, clearAudio } = useAudioRecorder();
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadMethod, setUploadMethod] = useState<'upload' | 'record'>('upload');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Music state
   const [songPrompt, setSongPrompt] = useState('');
@@ -106,8 +107,8 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         audioFileUrl: data.audioBase64 ? mediaUrl : '', // Fallback for older code
         cover_image: '', // Placeholder until we generate cover images
         genre: type === 'music' ? selectedGenre : '',
-        mood: type === 'music' ? selectedMood : selectedVoiceEmotion,
-        singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : selectedVoice,
+        mood: type === 'music' ? selectedMood : selectedMood,
+        singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : 'User Upload',
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
         type: type
@@ -123,8 +124,8 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
     if (onRequireAuth()) return;
     if (!useGeneration()) { onShowPremium(); return; }
 
-    if (mode === 'voice' && !ttsText.trim()) {
-      toast({ title: "Qoraal Geli", description: "Fadlan qoraal ku qor.", variant: "destructive" });
+    if (mode === 'voice' && !audioBlob && !uploadedFile) {
+      toast({ title: "Cod Maqan", description: "Fadlan soo geli ama duub codkaaga.", variant: "destructive" });
       return;
     }
     if (mode === 'music' && !isInstrumental && !songPrompt.trim()) {
@@ -141,11 +142,27 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
 
     try {
       if (mode === 'voice') {
-        const result = await generateReplicateVoice({ text: ttsText, voice: selectedVoice, emotion: selectedVoiceEmotion });
+        const fileToUse = audioBlob || uploadedFile;
+        if (!fileToUse) return;
+
+        // Convert Blob/File to Base64
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(fileToUse);
+        const base64Audio = await base64Promise;
+
+        const result = await generateVoiceCover({ 
+          referenceAudioBase64: base64Audio, 
+          genre: selectedGenre, 
+          mood: selectedMood 
+        });
         setAudioBase64(result.audioBase64);
         try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'voice'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-        await saveToFirebase({ audioBase64: result.audioBase64, prompt: ttsText }, 'voice');
-        toast({ title: "Guul! 🎙️", description: "Codkii waa la sameeyay!" });
+        await saveToFirebase({ audioBase64: result.audioBase64, prompt: 'Voice Cover' }, 'voice');
+        toast({ title: "Guul! 🎙️", description: "Heestii codkaaga ahayd waa diyaar!" });
       } else {
         const actualLyrics = isInstrumental ? (songPrompt.trim() || "[Instrumental]") : songPrompt;
         const stylePrompt = isInstrumental 
@@ -242,8 +259,8 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
             mode === 'voice' ? "bg-primary text-white glow-purple shadow-lg" : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <MessageSquare className="w-4 h-4" />
-          AI + Voice
+          <Mic className="w-4 h-4" />
+          Voice Cloning
         </button>
       </div>
 
@@ -337,38 +354,101 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         </div>
       )}
 
-      {/* ── VOICE MODE ── */}
+      {/* ── VOICE UPLOAD MODE ── */}
       {mode === 'voice' && (
         <div className="space-y-5 animate-in fade-in duration-300">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Qoraalka 📝</label>
-            <div className="relative">
-              <Textarea
-                placeholder="Halkaan qoraal ku qor si cod laga sameeyo... Af Soomaali waa la taageeri karaa! 🇸🇴"
-                value={ttsText}
-                onChange={(e) => setTtsText(e.target.value.slice(0, 500))}
-                rows={5}
-                className="w-full rounded-2xl bg-card border border-border text-sm resize-none focus:ring-2 focus:ring-primary pb-8"
-              />
-              <span className="absolute bottom-3 right-3 text-xs text-muted-foreground">{ttsText.length}/500</span>
-            </div>
+          <div className="flex gap-2 p-1 rounded-2xl bg-secondary/30 border border-white/5">
+            <button
+              onClick={() => { setUploadMethod('upload'); clearAudio(); }}
+              className={cn("flex-1 py-2 rounded-xl text-xs font-bold transition-all", uploadMethod === 'upload' ? "bg-secondary text-white" : "text-muted-foreground")}
+            >Upload Audio</button>
+            <button
+              onClick={() => { setUploadMethod('record'); setUploadedFile(null); }}
+              className={cn("flex-1 py-2 rounded-xl text-xs font-bold transition-all", uploadMethod === 'record' ? "bg-secondary text-white" : "text-muted-foreground")}
+            >Record Voice</button>
           </div>
+
+          {uploadMethod === 'upload' ? (
+            <div className="border-2 border-dashed border-white/20 hover:border-primary/50 transition-colors rounded-3xl p-8 text-center bg-black/20 flex flex-col items-center justify-center gap-3">
+              {uploadedFile ? (
+                <div className="flex items-center gap-3 bg-primary/20 px-4 py-3 rounded-2xl border border-primary/30">
+                  <Music4 className="w-6 h-6 text-primary" />
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-white truncate max-w-[150px]">{uploadedFile.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                  <button onClick={() => setUploadedFile(null)} className="p-2 hover:text-destructive"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-muted-foreground">
+                    <UploadCloud className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Upload Voice / Audio</p>
+                    <p className="text-xs text-muted-foreground mt-1">MP3, WAV, M4A up to 10MB</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="audio/*" 
+                    className="hidden" 
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 10 * 1024 * 1024) toast({ title: "Feylka wuu weyn yahay", description: "Fadlan soo geli feyl ka yar 10MB.", variant: "destructive" });
+                        else setUploadedFile(file);
+                      }
+                    }}
+                  />
+                  <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="rounded-xl mt-2">Select File</Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="border border-white/10 rounded-3xl p-8 text-center bg-black/20 flex flex-col items-center justify-center gap-4">
+              {audioBlob ? (
+                <div className="w-full space-y-4">
+                  <audio src={recordedAudioUrl || undefined} controls className="w-full h-10" />
+                  <Button onClick={clearAudio} variant="outline" className="w-full rounded-xl gap-2"><Trash2 className="w-4 h-4"/> Delete Recording</Button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={cn(
+                      "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 shadow-xl border-4",
+                      isRecording 
+                        ? "bg-destructive border-destructive/30 animate-pulse scale-110" 
+                        : "bg-primary border-primary/30 hover:scale-105"
+                    )}
+                  >
+                    <Mic className="w-10 h-10 text-white" />
+                  </button>
+                  <div>
+                    <p className="text-sm font-bold">{isRecording ? "Duubista waa socotaa..." : "Taabo si aad u duubto codkaaga"}</p>
+                    {isRecording && <p className="text-xs text-destructive animate-pulse mt-1">Recording...</p>}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Noocel Cod 🎤</label>
+              <label className="text-sm font-medium text-muted-foreground">Genre to Match 🎸</label>
               <div className="relative">
-                <select value={selectedVoice} onChange={(e) => setSelectedVoice(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {VOICE_OPTIONS.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+                <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                  {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Dareen 😊</label>
+              <label className="text-sm font-medium text-muted-foreground">Mood to Match 😊</label>
               <div className="relative">
-                <select value={selectedVoiceEmotion} onChange={(e) => setSelectedVoiceEmotion(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {EMOTION_OPTIONS.map((e) => <option key={e.id} value={e.id}>{e.label}</option>)}
+                <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                  {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
@@ -380,18 +460,18 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
       {/* Generate Button */}
       <Button
         onClick={handleGenerate}
-        disabled={isGenerating || (mode === 'voice' ? !ttsText.trim() : !songPrompt.trim())}
+        disabled={isGenerating || (mode === 'voice' ? (!audioBlob && !uploadedFile) : (!isInstrumental && !songPrompt.trim()))}
         className="w-full h-14 rounded-2xl premium-gradient text-base font-bold glow-purple group transition-all mt-4"
       >
         {isGenerating ? (
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>{mode === 'music' ? 'Abuuraya...' : 'Samaynaya Codka...'}</span>
+            <span>{mode === 'music' ? 'Abuuraya...' : 'Samaynaya Heesta...'}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span>{mode === 'music' ? 'Create AI Music 🎵' : 'Generate Voice 🎙️'}</span>
+            <span>{mode === 'music' ? 'Create AI Music 🎵' : 'Clone Voice & Create 🎙️'}</span>
           </div>
         )}
       </Button>
