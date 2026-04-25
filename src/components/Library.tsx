@@ -112,8 +112,13 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
             </Button>
           </div>
           
-          <div className="mt-6 bg-black/20 p-2 rounded-2xl">
-             <audio src={activeItem.audioFileUrl || activeItem.url} controls className="w-full h-8 opacity-90" />
+          <div className="mt-6 bg-black/20 p-2 rounded-2xl flex flex-col gap-2">
+             {(activeItem.audio_url || activeItem.audioFileUrl || activeItem.url || activeItem.mediaUrl) && !activeItem.video_url && (
+               <audio src={activeItem.audio_url || activeItem.audioFileUrl || activeItem.mediaUrl || activeItem.url} controls className="w-full h-8 opacity-90" />
+             )}
+             {(activeItem.video_url || (activeItem.mediaUrl && activeItem.mediaUrl.includes('.mp4'))) && (
+               <video src={activeItem.video_url || activeItem.mediaUrl} controls className="w-full rounded-lg mt-2 shadow-lg" />
+             )}
           </div>
         </div>
       )}
@@ -151,12 +156,15 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
-                    {item.type === 'song' ? (item.genre || 'AI Gen') : 'User Upload'}
+                    {item.type === 'song' ? (item.genre || 'AI Gen') + (item.mood ? ` • ${item.mood}` : '') : 'User Upload'}
                   </p>
                 </div>
-                <button className="p-2 text-muted-foreground group-hover:text-primary transition-colors">
-                  <Play className="w-5 h-5 fill-current" />
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  {item.singer_type && <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">{item.singer_type}</span>}
+                  <button className="p-2 text-muted-foreground group-hover:text-primary transition-colors">
+                    <Play className="w-5 h-5 fill-current" />
+                  </button>
+                </div>
               </div>
             </Card>
           ))}

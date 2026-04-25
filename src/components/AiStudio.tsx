@@ -97,12 +97,20 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
       }
       
       const docData = {
-        id,
+        id, // Keep id for React mapping
+        song_id: id,
         userId: user.uid,
         title: data.prompt ? data.prompt.slice(0, 30) + '...' : 'AI Generated Content',
-        mediaUrl: mediaUrl,
-        type: type,
-        createdAt: new Date().toISOString()
+        audio_url: data.audioBase64 ? mediaUrl : '',
+        video_url: data.videoBase64 ? mediaUrl : '',
+        audioFileUrl: data.audioBase64 ? mediaUrl : '', // Fallback for older code
+        cover_image: '', // Placeholder until we generate cover images
+        genre: type === 'music' ? selectedGenre : '',
+        mood: type === 'music' ? selectedMood : selectedVoiceEmotion,
+        singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : selectedVoice,
+        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Fallback for older sorting code
+        type: type
       };
       
       await setDoc(doc(db, 'users', user.uid, type === 'music' ? 'aiGeneratedSongs' : 'aiGeneratedVoices', id), docData);
