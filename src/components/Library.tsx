@@ -1,23 +1,26 @@
-
 "use client";
 
 import React, { useState } from 'react';
-import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock, Check } from 'lucide-react';
+import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock, Check, Sparkles, Edit2 } from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, deleteDoc, collection, updateDoc } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
+export function Library({ onShowPremium, onRequireAuth, onRemix }: { onShowPremium: () => void, onRequireAuth: () => boolean, onRemix: (data: any) => void }) {
   const { user } = useUser();
   const db = useFirestore();
   const { t } = useApp();
   const [activeItem, setActiveItem] = useState<any | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [isLiking, setIsLiking] = useState(false);
 
   const songsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -33,9 +36,12 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
   const { data: uploads } = useCollection(uploadsQuery);
 
   const libraryItems = [
-    ...(aiSongs?.map(s => ({ ...s, type: 'song' })) || []),
-    ...(uploads?.map(u => ({ ...u, type: 'upload' })) || [])
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    ...(aiSongs?.map(s => ({ ...s, type: 'song' })) || [])
+  ].sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+    const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
 
   const handleDownload = (item: any) => {
     toast({ title: "Downloading...", description: `${item.title} has started downloading.` });
@@ -55,6 +61,29 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
     await deleteDoc(doc(db, 'users', user.uid, colName, item.id));
     if (activeItem?.id === item.id) setActiveItem(null);
     toast({ title: "Removed", description: "Item deleted from library." });
+  };
+
+  const handleRename = async () => {
+    if (!user || !db || !activeItem) return;
+    const colName = activeItem.type === 'song' ? 'aiGeneratedSongs' : 'uploadedSongs';
+    try {
+      await updateDoc(doc(db, 'users', user.uid, colName, activeItem.id), {
+        title: newTitle.trim()
+      });
+      setActiveItem({ ...activeItem, title: newTitle.trim() });
+      setIsRenaming(false);
+      toast({ title: "Renamed! ✏️", description: "Heesta magaceeda waa la bedelay." });
+    } catch (e) {
+      toast({ title: "Cillad", description: "Magaca lama bedeli waayay.", variant: "destructive" });
+    }
+  };
+
+  const handleLike = () => {
+    setIsLiking(!isLiking);
+    toast({ 
+      title: !isLiking ? "Liked! ❤️" : "Unliked", 
+      description: !isLiking ? "Heestan waxaad ku dartay Favorites-kaaga." : "Heesta waa laga saaray Favorites." 
+    });
   };
 
   const togglePublic = async (item: any) => {
@@ -130,6 +159,38 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
               {isCopied ? "Copied" : "Share Link"}
             </Button>
           </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+             <Button 
+                onClick={() => onRemix(activeItem)} 
+                variant="outline" 
+                className="rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
+             >
+                <Sparkles className="w-4 h-4 text-primary" /> Remix
+             </Button>
+             <Button 
+                onClick={() => { setNewTitle(activeItem.title); setIsRenaming(true); }} 
+                variant="outline" 
+                className="rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2"
+             >
+                <Edit2 className="w-4 h-4 text-orange-400" /> Rename
+             </Button>
+          </div>
+
+          {isRenaming && (
+            <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/10 animate-in zoom-in-95 duration-200">
+               <Input 
+                  value={newTitle} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTitle(e.target.value)} 
+                  className="bg-background/50 mb-3 rounded-xl h-10"
+                  autoFocus
+               />
+               <div className="flex gap-2">
+                  <Button onClick={handleRename} className="flex-1 rounded-xl h-10 premium-gradient">Save</Button>
+                  <Button onClick={() => setIsRenaming(false)} variant="ghost" className="flex-1 rounded-xl h-10">Cancel</Button>
+               </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5">
              <div className="flex items-center gap-3">

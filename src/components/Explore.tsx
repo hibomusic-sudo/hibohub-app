@@ -5,7 +5,7 @@ import {
   Globe, Lock, Share2, Play, Pause, MoreVertical, 
   Search, Upload, Music4, Video, Download, Copy, Check,
   Clock, User as UserIcon, Flame, Sparkles, X, CloudUpload,
-  CheckCircle2, FileAudio, FileVideo
+  CheckCircle2, FileAudio, FileVideo, Heart, MessageCircle, Send, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,9 +37,11 @@ type ContentItem = {
   created_at?: string;
   isPublic: boolean;
   type?: 'music' | 'voice' | 'upload';
+  likesCount?: number;
+  commentsCount?: number;
 };
 
-export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
+export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremium: () => void, onRequireAuth: () => boolean, onRemix: (data: any) => void }) {
   const { user } = useUser();
   const db = useFirestore();
   const firebaseApp = useFirebaseApp();
@@ -58,6 +60,8 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPublicContent();
@@ -83,15 +87,24 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
         limit(20)
       );
 
-      const [uploadsSnap, aiSongsSnap] = await Promise.all([
-        getDocs(uploadsQuery),
-        getDocs(aiSongsQuery)
+      const aiVoicesQuery = query(
+        collectionGroup(db, 'aiGeneratedVoices'),
+        where('isPublic', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      );
+
+      const [uploadsSnap, aiSongsSnap, aiVoicesSnap] = await Promise.all([
+        getDocs(uploadsQuery).catch(e => { console.error("Uploads query failed:", e); return { docs: [] }; }),
+        getDocs(aiSongsQuery).catch(e => { console.error("AI Songs query failed:", e); return { docs: [] }; }),
+        getDocs(aiVoicesQuery).catch(e => { console.error("AI Voices query failed:", e); return { docs: [] }; })
       ]);
 
-      const uploads = uploadsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
-      const aiSongs = aiSongsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const uploads = (uploadsSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const aiSongs = (aiSongsSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const aiVoices = (aiVoicesSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
 
-      const combined = [...uploads, ...aiSongs].sort((a, b) => {
+      const combined = [...uploads, ...aiSongs, ...aiVoices].sort((a, b) => {
         const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
         const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
         return dateB - dateA;
@@ -104,6 +117,23 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!feedRef.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('data-id');
+          setActiveVideoId(id);
+        }
+      });
+    }, { threshold: 0.8 });
+
+    const items = feedRef.current.querySelectorAll('.feed-item');
+    items.forEach(item => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, [publicContent, isLoading]);
 
   const handlePlayPause = (item: ContentItem) => {
     const url = item.audio_url || item.audioFileUrl;
@@ -124,13 +154,26 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
   };
 
   const handleShare = async (item: ContentItem) => {
-    const url = window.location.origin + "/song/" + item.id;
+    const url = window.location.origin + "/song/" + (item.id || item.song_id);
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: "Link Copied! 🔗", description: "Heesta link-geeda waa la koobiyeeyay." });
     } catch (err) {
       toast({ title: "Cillad", description: "Link-ga waa la koobiyeen waayay.", variant: "destructive" });
     }
+  };
+
+  const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set());
+  const handleLike = (id: string) => {
+    const newLiked = new Set(likedSongs);
+    if (newLiked.has(id)) {
+      newLiked.delete(id);
+      toast({ title: "Unliked", description: "Heesta waa laga saaray Favorites." });
+    } else {
+      newLiked.add(id);
+      toast({ title: "Liked! ❤️", description: "Heestan waa lagu daray Favorites-kaaga." });
+    }
+    setLikedSongs(newLiked);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,7 +212,7 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
       const ext = selectedFile.name.split('.').pop() || 'mp3';
       const storageRef = ref(storage, `users/${user.uid}/uploads/${songId}.${ext}`);
 
-      toast({ title: "Uploading... ⬆️", description: "Heesta waa la soo shubayaa..." });
+      toast({ title: "Uploading... ⬆️", description: "Heesta waa la soo gelinayaa (Uploading)..." });
       await uploadBytes(storageRef, selectedFile);
       const downloadUrl = await getDownloadURL(storageRef);
 
@@ -189,7 +232,7 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
 
       await setDoc(doc(db, 'users', user.uid, 'uploadedSongs', songId), songData);
       
-      toast({ title: "Guul! ✅", description: "Heestaadii waa la soo shubay!" });
+      toast({ title: "Guul! ✅", description: "Heestaadii waa la soo geliyay!" });
       setShowUploadModal(false);
       setUploadTitle('');
       setSelectedFile(null);
@@ -207,98 +250,162 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-32">
-      <header className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="font-headline text-3xl font-bold text-glow-teal flex items-center gap-2">
-            Explore <Flame className="w-6 h-6 text-orange-500" />
+    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-black animate-in fade-in duration-500 rounded-3xl border border-white/5">
+      {/* Header Overlay */}
+      <div className="absolute top-4 left-6 right-4 z-50 flex items-center justify-between pointer-events-none">
+        <div className="flex flex-col">
+          <h1 className="font-headline text-3xl font-black text-white drop-shadow-lg pointer-events-auto tracking-tighter">
+            Hook <span className="text-primary italic text-sm">Now</span>
           </h1>
-          <p className="text-muted-foreground text-xs font-medium">Heesaha ugu shidan bulshada Hibo Hub.</p>
         </div>
-        <Button 
-          onClick={() => setShowUploadModal(true)}
-          className="rounded-2xl bg-primary/20 text-primary border border-primary/20 hover:bg-primary/30 h-12 px-5 gap-2 font-bold"
-        >
-          <Upload className="w-4 h-4" />
-          <span>Post</span>
-        </Button>
-      </header>
-
-      {/* Search Bar */}
-      <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-        <Input 
-          placeholder="Raadi heeso, genres ama fanaaniin..." 
-          className="h-14 pl-12 pr-4 bg-card/40 border-white/5 rounded-2xl focus:ring-2 focus:ring-primary/50 transition-all text-sm font-medium"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20"
+            onClick={() => toast({ title: "Search Coming Soon", description: "Search functionality is being optimized for the new feed." })}
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+          <Button 
+            onClick={() => setShowUploadModal(true)}
+            className="rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white h-10 px-4 hover:bg-white/20"
+          >
+            <Upload className="w-4 h-4 mr-2" /> Post
+          </Button>
+        </div>
       </div>
 
-      {/* Feed */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-card/40 rounded-2xl animate-pulse border border-white/5" />
-          ))}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
       ) : filteredContent.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
+        <div 
+          ref={feedRef}
+          className="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scrollbar"
+        >
           {filteredContent.map((item) => (
-            <Card key={item.id} className="p-4 bg-card/60 border-white/5 hover:border-primary/20 transition-all rounded-3xl group relative overflow-hidden">
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center overflow-hidden">
+            <div 
+              key={item.id} 
+              data-id={item.id}
+              className="feed-item h-full w-full snap-start relative flex flex-col items-center justify-center bg-zinc-900"
+            >
+              {/* Media Content */}
+              <div className="absolute inset-0 z-0">
+                {item.video_url ? (
+                  <video 
+                    src={item.video_url} 
+                    className="w-full h-full object-cover" 
+                    loop 
+                    muted={activeVideoId !== item.id}
+                    autoPlay={activeVideoId === item.id}
+                    playsInline
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-zinc-800 to-black relative">
+                    {/* Audio Visualizer Placeholder */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                      <div className="flex items-end gap-1 h-32">
+                        {[1,2,3,4,5,6,7,8].map(i => (
+                          <div key={i} className="w-2 bg-primary rounded-full animate-bounce" style={{ animationDuration: `${0.5 + i*0.1}s` }} />
+                        ))}
+                      </div>
+                    </div>
                     {item.cover_image ? (
-                      <img src={item.cover_image} alt={item.title} className="w-full h-full object-cover" />
+                      <img src={item.cover_image} alt={item.title} className="w-48 h-48 rounded-3xl object-cover z-10 shadow-2xl glow-purple rotate-3" />
                     ) : (
-                      <Music4 className="w-8 h-8 text-muted-foreground" />
+                      <div className="w-48 h-48 rounded-3xl bg-secondary/50 flex items-center justify-center z-10 shadow-2xl glow-teal rotate-3">
+                         <Music4 className="w-20 h-20 text-primary" />
+                      </div>
                     )}
                   </div>
-                  <button 
-                    onClick={() => handlePlayPause(item)}
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"
-                  >
-                    {currentlyPlaying === item.id ? <Pause className="w-8 h-8 text-white" /> : <Play className="w-8 h-8 text-white" />}
-                  </button>
-                </div>
+                )}
+                {/* Dark Vignette Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-sm truncate pr-8">{item.title}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">
-                      {item.genre || 'General'}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {new Date(item.createdAt || item.created_at || '').toLocaleDateString()}
-                    </span>
-                  </div>
+              {/* Bottom Info */}
+              <div className="absolute bottom-10 left-6 right-20 z-10 space-y-3">
+                <div className="flex items-center gap-2">
+                   <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                      <UserIcon className="w-5 h-5 text-primary" />
+                   </div>
+                   <span className="font-bold text-white text-lg">User_{item.userId?.slice(0,4)}</span>
+                   <button className="px-3 py-1 rounded-full bg-primary text-white text-[10px] font-bold">Follow</button>
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => handleShare(item)}
-                    className="p-2 rounded-xl hover:bg-secondary/50 text-muted-foreground transition-all"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 rounded-xl hover:bg-secondary/50 text-muted-foreground transition-all">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
+                <h3 className="text-white font-medium text-base drop-shadow-md pr-4">{item.title}</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-white/80 flex items-center gap-1 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm">
+                    <Music4 className="w-3 h-3" /> {item.genre || 'Original'}
+                  </span>
+                  <span className="text-xs text-white/80 flex items-center gap-1 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm">
+                    <Star className="w-3 h-3 text-yellow-400" /> Viral
+                  </span>
                 </div>
               </div>
 
-              {/* Decorative background blur on hover */}
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Card>
+              {/* Interaction Sidebar */}
+              <div className="absolute bottom-12 right-4 z-20 flex flex-col items-center gap-6">
+                <div className="flex flex-col items-center gap-1">
+                  <button 
+                    onClick={() => handleLike(item.id)}
+                    className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all active:scale-90",
+                      likedSongs.has(item.id) ? "bg-red-500 text-white" : "bg-black/40 text-white"
+                    )}
+                  >
+                    <Heart className={cn("w-6 h-6", likedSongs.has(item.id) && "fill-current")} />
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">{Math.floor(Math.random() * 500) + 100}</span>
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <button className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90">
+                    <MessageCircle className="w-6 h-6" />
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">{Math.floor(Math.random() * 50)}</span>
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <button 
+                    onClick={() => handleShare(item)}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90"
+                  >
+                    <Send className="w-6 h-6" />
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">Share</span>
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <button 
+                    onClick={() => onRemix(item)}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-primary text-white glow-purple transition-all active:scale-90 animate-spin-slow"
+                  >
+                    <Sparkles className="w-6 h-6" />
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">Remix</span>
+                </div>
+
+                {/* Love Sticker (Animated) */}
+                <div className="flex flex-col items-center gap-1">
+                  <button 
+                    onClick={() => toast({ title: "Love Stickers! ❤️", description: "You sent a burst of love!" })}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-lg shadow-rose-500/20 transition-all active:scale-90"
+                  >
+                    <Heart className="w-6 h-6 animate-pulse" />
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">Love</span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 space-y-4">
-          <div className="w-20 h-20 bg-secondary/30 rounded-full flex items-center justify-center mx-auto">
-            <Sparkles className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground text-sm">Wax heeso ah weli laguma soo darin halkan.</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-4">
+           <Sparkles className="w-16 h-16 text-muted-foreground opacity-20" />
+           <p className="text-muted-foreground text-sm">Weli wax heeso ah laguma soo darin qaybtan.</p>
+           <Button onClick={() => fetchPublicContent()} variant="outline" className="rounded-full">Reload Feed</Button>
         </div>
       )}
 
@@ -381,4 +488,4 @@ export function Explore({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
       )}
     </div>
   );
-}
+};

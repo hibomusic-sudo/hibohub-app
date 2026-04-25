@@ -31,6 +31,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabType>('create');
   const [showPremium, setShowPremium] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [remixData, setRemixData] = useState<any | null>(null);
   const { language, setLanguage, t } = useApp();
 
   if (isUserLoading) {
@@ -49,11 +50,16 @@ function AppContent() {
     return false;
   };
 
+  const handleRemix = (data: any) => {
+    setRemixData(data);
+    setActiveTab('create');
+  };
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'create': return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'explore': return <Explore onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'create': return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} initialData={remixData} />;
+      case 'explore': return <Explore onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} onRemix={handleRemix} />;
+      case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} onRemix={handleRemix} />;
       case 'settings': return (
         <div className="flex flex-col items-center justify-center h-96 space-y-4">
           <h2 className="text-2xl font-bold">Account Settings</h2>
@@ -85,51 +91,53 @@ function AppContent() {
       <Sticker icon={Sparkles} className="bottom-[20%] left-[15%] w-10 h-10" delay="2s" />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-10 relative z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-2xl premium-gradient flex items-center justify-center glow-purple rotate-3 shadow-lg">
-            <Sparkles className="w-6 h-6 text-white" />
+      {activeTab !== 'explore' && (
+        <div className="flex items-center justify-between mb-10 relative z-50">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-2xl premium-gradient flex items-center justify-center glow-purple rotate-3 shadow-lg">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-headline text-2xl font-black tracking-tighter">HIBO HUB</span>
           </div>
-          <span className="font-headline text-2xl font-black tracking-tighter">HIBO HUB</span>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-secondary transition-all">
-                <Languages className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-secondary transition-all">
+                  <Languages className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[140px]">
+                <DropdownMenuItem onClick={() => setLanguage('so')} className="rounded-lg mb-1 focus:bg-primary/20">
+                  🇸🇴 Soomaali
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('ar')} className="rounded-lg mb-1 focus:bg-primary/20">
+                  🇸🇦 العربية
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('en')} className="rounded-lg focus:bg-primary/20">
+                  🇺🇸 English
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-destructive/20 transition-all text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-5 h-5" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[140px]">
-              <DropdownMenuItem onClick={() => setLanguage('so')} className="rounded-lg mb-1 focus:bg-primary/20">
-                🇸🇴 Soomaali
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('ar')} className="rounded-lg mb-1 focus:bg-primary/20">
-                🇸🇦 العربية
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('en')} className="rounded-lg focus:bg-primary/20">
-                🇺🇸 English
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {user ? (
-            <button 
-              onClick={handleLogout}
-              className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-destructive/20 transition-all text-muted-foreground hover:text-destructive"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          ) : (
-            <button 
-              onClick={() => setShowAuth(true)}
-              className="w-10 h-10 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center hover:bg-primary/40 transition-all text-primary"
-            >
-              <UserIcon className="w-5 h-5" />
-            </button>
-          )}
+            ) : (
+              <button 
+                onClick={() => setShowAuth(true)}
+                className="w-10 h-10 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center hover:bg-primary/40 transition-all text-primary"
+              >
+                <UserIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Dynamic Background */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">

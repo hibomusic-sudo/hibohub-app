@@ -50,7 +50,7 @@ const ADVANCED_STEPS = [
   "Mix & Master..."
 ];
 
-export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
+export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShowPremium: () => void, onRequireAuth: () => boolean, initialData?: any }) {
   const { user } = useUser();
   const db = useFirestore();
   const firebaseApp = useFirebaseApp();
@@ -81,6 +81,21 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Magic generation state
+  const [isMagic, setIsMagic] = useState(false);
+  const justGeneratedRef = useRef(false);
+
+  // Sync initialData for Remix
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.genre) setSelectedGenre(initialData.genre);
+      if (initialData.mood) setSelectedMood(initialData.mood);
+      if (initialData.singer_type) setSelectedSingerType(initialData.singer_type);
+      if (initialData.title) setSongPrompt(`Remix of: ${initialData.title}`);
+      toast({ title: "Remix Mode Active 🔄", description: "Settings loaded from selected song." });
+    }
+  }, [initialData]);
   const { useGeneration, t } = useApp();
 
   // Load from local storage on mount
@@ -219,7 +234,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
           setAudioBase64(result.audioBase64);
           try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
           await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
-          toast({ title: "Guul! 🎵", description: "Heestaadii waa diyaar!" });
+          toast({ title: "Guul! 🎵", description: "Heestaadii waa diyaar oo waa la kaydiyay!" });
         }
       }
     } catch (error: any) {
@@ -227,21 +242,53 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
     } finally {
       if (stepInterval!) clearInterval(stepInterval);
       setIsGenerating(false);
+      setIsMagic(false);
+      justGeneratedRef.current = true;
     }
   };
 
-  const handlePlayPause = () => {
+  // Auto-play when audio is ready
+  useEffect(() => {
+    if (audioBase64 && !isGenerating && justGeneratedRef.current) {
+      handlePlayPause(true);
+      justGeneratedRef.current = false;
+    }
+  }, [audioBase64, isGenerating]);
+
+  const handleMagicGenerate = () => {
+    const randomGenre = GENRE_LIST[Math.floor(Math.random() * GENRE_LIST.length)];
+    const randomMood = MOOD_LIST[Math.floor(Math.random() * MOOD_LIST.length)];
+    const randomSinger = SINGER_TYPES[Math.floor(Math.random() * SINGER_TYPES.length)];
+    
+    setSelectedGenre(randomGenre);
+    setSelectedMood(randomMood);
+    setSelectedSingerType(randomSinger);
+    setSongPrompt(`Magic ${randomGenre} ${randomMood} vibe`);
+    setIsMagic(true);
+    
+    // Small delay to ensure state updates before firing
+    setTimeout(() => {
+      handleGenerate();
+    }, 100);
+  };
+
+  const handlePlayPause = (forcePlay?: boolean) => {
     if (audioBase64) {
       if (!audioRef.current) {
         audioRef.current = new Audio(audioBase64);
         audioRef.current.onended = () => setIsPlaying(false);
       }
-      if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); } 
-      else { audioRef.current.play(); setIsPlaying(true); }
+      if (isPlaying && !forcePlay) { 
+        audioRef.current.pause(); 
+        setIsPlaying(false); 
+      } else { 
+        audioRef.current.play().catch(e => console.warn("Auto-play blocked by browser", e)); 
+        setIsPlaying(true); 
+      }
     } else if (videoBase64) {
       if (!videoRef.current) return;
-      if (isPlaying) { videoRef.current.pause(); setIsPlaying(false); }
-      else { videoRef.current.play(); setIsPlaying(true); }
+      if (isPlaying && !forcePlay) { videoRef.current.pause(); setIsPlaying(false); }
+      else { videoRef.current.play().catch(e => console.warn("Auto-play blocked", e)); setIsPlaying(true); }
     }
   };
 
@@ -518,6 +565,19 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         </div>
       )}
 
+      {/* Magic Button */}
+      {mode === 'music' && (
+        <Button
+          onClick={handleMagicGenerate}
+          disabled={isGenerating}
+          variant="outline"
+          className="w-full h-12 rounded-2xl border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 gap-2 font-bold mb-2"
+        >
+          <Sparkles className="w-4 h-4" />
+          One-Click Magic Song ✨
+        </Button>
+      )}
+
       {/* Public/Private Toggle */}
       <div className="flex items-center justify-between p-4 bg-card/60 border border-border rounded-2xl">
         <div className="flex items-center gap-3">
@@ -594,7 +654,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
 
           <div className="flex gap-3">
             {!videoBase64 && (
-              <Button onClick={handlePlayPause} variant="outline" className="flex-1 rounded-xl h-11 gap-2">
+              <Button onClick={() => handlePlayPause()} variant="outline" className="flex-1 rounded-xl h-11 gap-2">
                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 {isPlaying ? "Jooji" : "Dhegayso"}
               </Button>

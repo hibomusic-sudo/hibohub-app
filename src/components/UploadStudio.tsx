@@ -30,9 +30,12 @@ export function UploadStudio({ onShowPremium, onRequireAuth }: { onShowPremium: 
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aac|m4a)$/i)) {
-      toast({ title: "Nooc khaldan", description: "Fadlan file nooca MP3, WAV, ama OGG dooro.", variant: "destructive" });
+    const validTypes = [
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac',
+      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'
+    ];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|aac|m4a|mp4|mov|avi|webm)$/i)) {
+      toast({ title: "Nooc khaldan", description: "Fadlan file nooca Audio ama Video dooro.", variant: "destructive" });
       return;
     }
 
@@ -71,27 +74,30 @@ export function UploadStudio({ onShowPremium, onRequireAuth }: { onShowPremium: 
       const storageRef = ref(storage, `users/${user.uid}/uploads/${songId}.${ext}`);
 
       // Upload file to Firebase Storage
-      toast({ title: "Uploading... ⬆️", description: "Heesta waa la soo shubayaa..." });
+      toast({ title: "Uploading... ⬆️", description: "Heesta waa la soo gelinayaa..." });
       await uploadBytes(storageRef, selectedFile);
       const downloadUrl = await getDownloadURL(storageRef);
 
       // Save metadata to Firestore
+      const isVideo = selectedFile.type.includes('video') || selectedFile.name.match(/\.(mp4|mov|avi|webm)$/i);
       const songData = {
         id: songId,
         uploaderId: user.uid,
         title: title.trim(),
-        audioFileUrl: downloadUrl,
+        audioFileUrl: isVideo ? '' : downloadUrl,
+        video_url: isVideo ? downloadUrl : '',
         fileName: selectedFile.name,
         fileSize: selectedFile.size,
         fileType: selectedFile.type,
-        durationSeconds: 0, // Can be calculated later
+        durationSeconds: 0,
         isPublic: isPublic,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        type: 'upload'
       };
 
       await setDoc(doc(db, 'users', user.uid, 'uploadedSongs', songId), songData);
       
-      toast({ title: "Guul! ✅", description: "Heestaadii waa la soo shubay!" });
+      toast({ title: "Guul! ✅", description: "Heestaadii waa la soo geliyay!" });
       setTitle('');
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
