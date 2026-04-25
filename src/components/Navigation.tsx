@@ -1,11 +1,11 @@
 "use client";
 
 import React from 'react';
-import { Music, Video, Mic, Library, Upload } from 'lucide-react';
+import { Music, Upload, Library, Settings, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/lib/app-context';
 
-export type TabType = 'music' | 'video' | 'voice' | 'upload' | 'library';
+export type TabType = 'create' | 'explore' | 'library' | 'settings';
 
 interface NavigationProps {
   activeTab: TabType;
@@ -16,11 +16,10 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   const { t, userProfile } = useApp();
   
   const tabs = [
-    { id: 'music', label: 'MUSIC', icon: Music },
-    { id: 'video', label: 'VIDEO', icon: Video },
-    { id: 'voice', label: 'VOICE', icon: Mic },
-    { id: 'upload', label: 'UPLOAD', icon: Upload },
-    { id: 'library', label: 'YOUR', icon: Library },
+    { id: 'create', label: 'CREATE', icon: Sparkles },
+    { id: 'explore', label: 'EXPLORE', icon: Upload },
+    { id: 'library', label: 'LIBRARY', icon: Library },
+    { id: 'settings', label: 'SETTINGS', icon: Settings },
   ] as const;
 
   return (

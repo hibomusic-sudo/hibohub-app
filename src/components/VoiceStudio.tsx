@@ -81,21 +81,16 @@ export function VoiceStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
     }
   };
 
-  const handleDownload = () => {
-    if (!audioBase64) return;
-    // Convert base64 data URL to Blob for reliable download
-    const mimeType = mode === 'tts' ? 'audio/mpeg' : 'audio/mpeg';
-    const ext = 'mp3';
+const handleDownload = () => {
+  if (!audioBase64) return;
+  const ext = "mp3";
+  // Try to fetch the data URL – works for both data: URLs and remote URLs
+  const downloadBlob = async () => {
     try {
-      const base64String = audioBase64.split(',')[1] || audioBase64;
-      const binaryString = atob(base64String);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: mimeType });
+      const response = await fetch(audioBase64);
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `hibohub-${mode}-${Date.now()}.${ext}`;
       document.body.appendChild(link);
@@ -103,13 +98,28 @@ export function VoiceStudio({ onShowPremium, onRequireAuth }: { onShowPremium: (
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (e) {
-      // Fallback: direct download
-      const link = document.createElement('a');
-      link.href = audioBase64;
+      console.error("Fetch download failed, falling back to manual conversion", e);
+      // Manual conversion fallback (same as previous implementation)
+      const mimeType = "audio/mpeg";
+      const base64String = audioBase64.split(",")[1] || audioBase64;
+      const binaryString = atob(base64String);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
       link.download = `hibohub-${mode}-${Date.now()}.${ext}`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
   };
+  void downloadBlob();
+};
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-32">

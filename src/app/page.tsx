@@ -5,13 +5,11 @@ import React, { useState } from 'react';
 import { AppProvider, useApp, Language } from '@/lib/app-context';
 import { FirebaseClientProvider } from '@/firebase';
 import { Navigation, TabType } from '@/components/Navigation';
-import { MusicStudio } from '@/components/MusicStudio';
-import { VideoStudio } from '@/components/VideoStudio';
-import { VoiceStudio } from '@/components/VoiceStudio';
+import { AiStudio } from '@/components/AiStudio';
 import { UploadStudio } from '@/components/UploadStudio';
 import { Library } from '@/components/Library';
-import { PremiumGate } from '@/components/PremiumGate';
 import { AuthScreen } from '@/components/AuthScreen';
+import { PremiumGate } from '@/components/PremiumGate';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import { Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
@@ -30,7 +28,7 @@ function Sticker({ icon: Icon, className, delay = '0s' }: { icon: any, className
 function AppContent() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('music');
+  const [activeTab, setActiveTab] = useState<TabType>('create');
   const [showPremium, setShowPremium] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const { language, setLanguage, t } = useApp();
@@ -53,12 +51,25 @@ function AppContent() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'music': return <MusicStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'video': return <VideoStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'voice': return <VoiceStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'upload': return <UploadStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'create': return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'explore': return <UploadStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
       case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      default: return <MusicStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'settings': return (
+        <div className="flex flex-col items-center justify-center h-96 space-y-4">
+          <h2 className="text-2xl font-bold">Account Settings</h2>
+          {user ? (
+            <p className="text-muted-foreground">Logged in as {user.email || 'User'}</p>
+          ) : (
+            <button 
+              onClick={() => setShowAuth(true)}
+              className="px-6 py-3 rounded-full bg-primary text-white font-bold glow-purple"
+            >
+              Login / Sign Up
+            </button>
+          )}
+        </div>
+      );
+      default: return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
     }
   };
 
