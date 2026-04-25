@@ -54,6 +54,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   const [selectedMood, setSelectedMood] = useState(MOOD_LIST[0]);
   const [selectedSingerType, setSelectedSingerType] = useState(SINGER_TYPES[0]);
   const [selectedSongType, setSelectedSongType] = useState(SONG_TYPES[0]);
+  const [isInstrumental, setIsInstrumental] = useState(false);
   
   // Shared state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -118,8 +119,8 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
       toast({ title: "Qoraal Geli", description: "Fadlan qoraal ku qor.", variant: "destructive" });
       return;
     }
-    if (mode === 'music' && !songPrompt.trim()) {
-      toast({ title: "Mawduuca Geli", description: "Fadlan heesta mawduuceeda qor.", variant: "destructive" });
+    if (mode === 'music' && !isInstrumental && !songPrompt.trim()) {
+      toast({ title: "Mawduuca Geli", description: "Fadlan heesta mawduuceeda qor ama shid 'Instrumental'.", variant: "destructive" });
       return;
     }
 
@@ -138,23 +139,22 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         await saveToFirebase({ audioBase64: result.audioBase64, prompt: ttsText }, 'voice');
         toast({ title: "Guul! 🎙️", description: "Codkii waa la sameeyay!" });
       } else {
-        const stylePrompt = `${selectedGenre}, ${selectedMood} mood, ${selectedSingerType}`;
+        const actualLyrics = isInstrumental ? (songPrompt.trim() || "[Instrumental]") : songPrompt;
+        const stylePrompt = isInstrumental 
+          ? `${selectedGenre}, ${selectedMood} mood, instrumental, no vocals`
+          : `${selectedGenre}, ${selectedMood} mood, ${selectedSingerType}`;
         
         if (selectedSongType === 'Video Song') {
-            // Because generateReplicateVideo might not exist or we don't have it imported,
-            // we will just use generateReplicateSong but ideally would use generateReplicateVideo
-            // Let's assume we just generate a song for now if Video isn't fully supported,
-            // or we use generateReplicateSong. Let me verify if generateReplicateVideo exists.
-            const result = await generateReplicateSong({ lyrics: songPrompt, style: stylePrompt });
+            const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt });
             setAudioBase64(result.audioBase64);
             try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-            await saveToFirebase({ audioBase64: result.audioBase64, prompt: songPrompt }, 'music');
+            await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
             toast({ title: "Guul! 🎵 (Audio Only)", description: "Video generation not yet hooked up, generated audio instead." });
         } else {
-          const result = await generateReplicateSong({ lyrics: songPrompt, style: stylePrompt });
+          const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt });
           setAudioBase64(result.audioBase64);
           try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-          await saveToFirebase({ audioBase64: result.audioBase64, prompt: songPrompt }, 'music');
+          await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
           toast({ title: "Guul! 🎵", description: "Heestaadii waa diyaar!" });
         }
       }
@@ -242,10 +242,29 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
       {/* ── MUSIC MODE ── */}
       {mode === 'music' && (
         <div className="space-y-5 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
+            <div>
+              <p className="text-sm font-bold text-white">Instrumental (Music Kaliya) 🎵</p>
+              <p className="text-xs text-muted-foreground mt-1">Muusig aan laheyn codka fanaanka.</p>
+            </div>
+            <button
+              onClick={() => setIsInstrumental(!isInstrumental)}
+              className={cn(
+                "w-12 h-6 rounded-full transition-colors relative",
+                isInstrumental ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform",
+                isInstrumental ? "translate-x-6" : "translate-x-0.5"
+              )} />
+            </button>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Song Description / Lyrics 🎼</label>
             <Textarea
-              placeholder={`Describe the song or provide lyrics...\ne.g. An upbeat pop song about summer nights.`}
+              placeholder={isInstrumental ? `Describe the vibe of the instrumental...\ne.g. An upbeat pop backing track.` : `Describe the song or provide lyrics...\ne.g. An upbeat pop song about summer nights.`}
               value={songPrompt}
               onChange={(e) => setSongPrompt(e.target.value.slice(0, 600))}
               rows={4}
@@ -275,15 +294,17 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
               </div>
             </div>
             
-            <div className="space-y-2 col-span-2">
-              <label className="text-sm font-medium text-muted-foreground">Singer Type 🎤</label>
-              <div className="relative">
-                <select value={selectedSingerType} onChange={(e) => setSelectedSingerType(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {SINGER_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            {!isInstrumental && (
+              <div className="space-y-2 col-span-2 animate-in fade-in slide-in-from-top-2">
+                <label className="text-sm font-medium text-muted-foreground">Singer Type 🎤</label>
+                <div className="relative">
+                  <select value={selectedSingerType} onChange={(e) => setSelectedSingerType(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                    {SINGER_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           <div className="space-y-2">
