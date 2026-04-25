@@ -14,10 +14,11 @@ import { useApp } from '@/lib/app-context';
 import { useUser, useFirestore, useFirebaseApp } from '@/firebase';
 import { 
   collectionGroup, query, where, getDocs, orderBy, limit, 
-  doc, setDoc, updateDoc, deleteDoc
+  doc, setDoc, updateDoc, deleteDoc, getDoc, increment 
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
+import { KaraokeLyrics } from './KaraokeLyrics';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ type ContentItem = {
   type?: 'music' | 'voice' | 'upload';
   likesCount?: number;
   commentsCount?: number;
+  lyrics_sync?: any;
 };
 
 export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremium: () => void, onRequireAuth: () => boolean, onRemix: (data: any) => void }) {
@@ -52,6 +54,7 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Upload Modal State
@@ -149,7 +152,13 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
       audioRef.current = new Audio(url);
       audioRef.current.play();
       setCurrentlyPlaying(item.id);
-      audioRef.current.onended = () => setCurrentlyPlaying(null);
+      audioRef.current.ontimeupdate = () => {
+        if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+      };
+      audioRef.current.onended = () => {
+        setCurrentlyPlaying(null);
+        setCurrentTime(0);
+      };
     }
   };
 
@@ -349,7 +358,16 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
 
               {/* Bottom Info */}
               <div className="absolute bottom-10 left-6 right-20 z-10 space-y-3">
-                {item.lyrics && (
+                {item.lyrics_sync && item.lyrics_sync.length > 0 && currentlyPlaying === item.id ? (
+                  <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 max-w-[90%] animate-in fade-in slide-in-from-bottom-4">
+                    <KaraokeLyrics 
+                      lyricsSync={item.lyrics_sync} 
+                      currentTime={currentTime} 
+                      className="text-base gap-x-1 gap-y-1 py-1"
+                      activeColor="text-primary"
+                    />
+                  </div>
+                ) : item.lyrics && (
                   <div className="bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/5 max-w-[80%] animate-in fade-in slide-in-from-left-4">
                     <p className="text-white/90 text-sm italic line-clamp-3 leading-relaxed">
                       "{item.lyrics}"

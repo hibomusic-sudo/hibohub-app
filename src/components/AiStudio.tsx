@@ -145,6 +145,7 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
         singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : 'User Upload',
         isPublic: isPublic,
         lyrics: data.prompt || '',
+        lyrics_sync: data.lyricsSync || [],
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
         type: type
@@ -217,7 +218,7 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
         });
         setAudioBase64(result.audioBase64);
         try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'voice'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-        await saveToFirebase({ audioBase64: result.audioBase64, prompt: 'Voice Cover' }, 'voice');
+        await saveToFirebase({ audioBase64: result.audioBase64, prompt: 'Voice Cover', lyricsSync: result.lyricsSync }, 'voice');
         toast({ title: "Guul! 🎙️", description: "Heestii codkaaga ahayd waa diyaar!" });
       } else {
         const actualLyrics = isInstrumental ? (songPrompt.trim() || "[Instrumental]") : songPrompt;
@@ -229,13 +230,13 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
             const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt, isInstrumental });
             setAudioBase64(result.audioBase64);
             try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-            await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
+            await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics, lyricsSync: result.lyricsSync }, 'music');
             toast({ title: "Guul! 🎵 (Audio Only)", description: "Video generation not yet hooked up, generated audio instead." });
         } else {
           const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt, isInstrumental });
           setAudioBase64(result.audioBase64);
           try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-          await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
+          await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics, lyricsSync: result.lyricsSync }, 'music');
           toast({ title: "Guul! 🎵", description: "Heestaadii waa diyaar oo waa la kaydiyay!" });
         }
       }

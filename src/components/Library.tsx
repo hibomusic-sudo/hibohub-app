@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { KaraokeLyrics } from './KaraokeLyrics';
 
 export function Library({ onShowPremium, onRequireAuth, onRemix }: { onShowPremium: () => void, onRequireAuth: () => boolean, onRemix: (data: any) => void }) {
   const { user } = useUser();
@@ -21,6 +22,7 @@ export function Library({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
   const [isRenaming, setIsRenaming] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [isLiking, setIsLiking] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const songsQuery = useMemoFirebase(() => {
     if (!db || !user) return null;
@@ -203,7 +205,17 @@ export function Library({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
              <Switch checked={activeItem.isPublic || false} onCheckedChange={() => togglePublic(activeItem)} />
           </div>
           
-          {activeItem.lyrics && (
+          {activeItem.lyrics_sync && activeItem.lyrics_sync.length > 0 ? (
+            <div className="mt-4 p-4 rounded-2xl bg-black/30 border border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2 flex items-center gap-2">
+                <Sparkles className="w-3 h-3" /> Karaoke Sync ✨
+              </p>
+              <KaraokeLyrics 
+                lyricsSync={activeItem.lyrics_sync} 
+                currentTime={currentTime} 
+              />
+            </div>
+          ) : activeItem.lyrics && (
             <div className="mt-4 p-4 rounded-2xl bg-black/30 border border-white/10 max-h-40 overflow-y-auto">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-2">Lyrics / Concept 🎼</p>
               <p className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed italic">"{activeItem.lyrics}"</p>
@@ -212,10 +224,20 @@ export function Library({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
           
           <div className="mt-6 bg-black/20 p-2 rounded-2xl flex flex-col gap-2">
              {(activeItem.audio_url || activeItem.audioFileUrl || activeItem.url || activeItem.mediaUrl) && !activeItem.video_url && (
-               <audio src={activeItem.audio_url || activeItem.audioFileUrl || activeItem.mediaUrl || activeItem.url} controls className="w-full h-8 opacity-90" />
+               <audio 
+                 src={activeItem.audio_url || activeItem.audioFileUrl || activeItem.mediaUrl || activeItem.url} 
+                 controls 
+                 className="w-full h-8 opacity-90" 
+                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+               />
              )}
              {(activeItem.video_url || (activeItem.mediaUrl && activeItem.mediaUrl.includes('.mp4'))) && (
-               <video src={activeItem.video_url || activeItem.mediaUrl} controls className="w-full rounded-lg mt-2 shadow-lg" />
+               <video 
+                 src={activeItem.video_url || activeItem.mediaUrl} 
+                 controls 
+                 className="w-full rounded-lg mt-2 shadow-lg" 
+                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+               />
              )}
           </div>
         </div>

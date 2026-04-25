@@ -12,9 +12,12 @@ export type GenerateVoiceCoverInput = {
   mood: string;
 };
 
+import { getAudioAlignment, WordTimestamp } from "./get-audio-alignment";
+
 export type GenerateVoiceCoverOutput = {
   audioUrl: string;
   audioBase64: string;
+  lyricsSync?: WordTimestamp[];
 };
 
 export async function generateVoiceCover(
@@ -67,9 +70,14 @@ export async function generateVoiceCover(
     const arrayBuffer = await response.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString('base64');
 
+    // NEW: Get Alignment
+    console.log("Generating alignment for Karaoke...");
+    const lyricsSync = await getAudioAlignment(audioUrl);
+
     return {
       audioUrl,
-      audioBase64: `data:audio/mp3;base64,${base64Data}`
+      audioBase64: `data:audio/mp3;base64,${base64Data}`,
+      lyricsSync
     };
   } catch (error: any) {
     console.error("Voice Cover Generation Error:", error);

@@ -1,20 +1,16 @@
 'use server';
 
 import Replicate from "replicate";
+import { getAudioAlignment, WordTimestamp } from "./get-audio-alignment";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
-export type GenerateReplicateSongInput = {
-  lyrics: string;
-  style: string;
-  isInstrumental?: boolean;
-};
-
 export type GenerateReplicateSongOutput = {
   audioUrl: string;
   audioBase64: string;
+  lyricsSync?: WordTimestamp[];
 };
 
 export async function generateReplicateSong(
@@ -24,10 +20,6 @@ export async function generateReplicateSong(
 
   if (!process.env.REPLICATE_API_TOKEN) {
     throw new Error("REPLICATE_API_TOKEN is not configured.");
-  }
-
-  if (!isInstrumental && (!lyrics || lyrics.trim().length === 0)) {
-    throw new Error("Lyrics are required for song generation.");
   }
 
   // Build structured lyrics with section tags if not already present
@@ -52,9 +44,7 @@ export async function generateReplicateSong(
 
   try {
     console.log("Generating song with MiniMax Music 2.6...");
-    console.log("Prompt:", prompt);
-    console.log("Lyrics:", structuredLyrics.slice(0, 100));
-
+    
     const output = await replicate.run(
       "minimax/music-2.6",
       {
@@ -69,8 +59,6 @@ export async function generateReplicateSong(
       }
     );
 
-    console.log("MiniMax Music 2.6 output type:", typeof output, "constructor:", (output as any)?.constructor?.name);
-
     // Handle FileOutput or other formats
     let base64Data: string;
     let audioUrl: string = "";
@@ -78,35 +66,28 @@ export async function generateReplicateSong(
 
     if (outputAny?.constructor?.name === 'FileOutput' || typeof outputAny?.url === 'function') {
       audioUrl = outputAny.url().toString();
-      console.log("Song URL:", audioUrl);
-      const response = await fetch(audioUrl);
-      if (!response.ok) throw new Error(`Failed to fetch song: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      base64Data = Buffer.from(arrayBuffer).toString('base64');
     } else if (typeof output === 'string') {
       audioUrl = output;
-      const response = await fetch(audioUrl);
-      if (!response.ok) throw new Error(`Failed to fetch song: ${response.statusText}`);
-      const arrayBuffer = await response.arrayBuffer();
-      base64Data = Buffer.from(arrayBuffer).toString('base64');
-    } else if (output instanceof Buffer) {
-      base64Data = output.toString('base64');
     } else {
       const str = String(output);
-      if (str.startsWith('http')) {
-        audioUrl = str;
-        const response = await fetch(audioUrl);
-        if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
-        const arrayBuffer = await response.arrayBuffer();
-        base64Data = Buffer.from(arrayBuffer).toString('base64');
-      } else {
-        throw new Error(`Unsupported output: ${outputAny?.constructor?.name || typeof output}`);
-      }
+      if (str.startsWith('http')) audioUrl = str;
+      else throw new Error("Could not get audio URL");
     }
+
+    // Fetch and convert to base64
+    const response = await fetch(audioUrl);
+    if (!response.ok) throw new Error(`Failed to fetch song: ${response.statusText}`);
+    const arrayBuffer = await response.arrayBuffer();
+    base64Data = Buffer.from(arrayBuffer).toString('base64');
+
+    // NEW: Get Alignment
+    console.log("Generating alignment for Karaoke...");
+    const lyricsSync = await getAudioAlignment(audioUrl);
 
     return {
       audioUrl,
-      audioBase64: `data:audio/mp3;base64,${base64Data}`
+      audioBase64: `data:audio/mp3;base64,${base64Data}`,
+      lyricsSync
     };
   } catch (error: any) {
     console.error("Song Generation Error:", error);
