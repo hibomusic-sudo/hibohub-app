@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Music, Upload, Library, Settings, Sparkles } from 'lucide-react';
+import { Music, Library, User as UserIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/lib/app-context';
 
@@ -16,10 +16,10 @@ export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   const { t, userProfile } = useApp();
   
   const tabs = [
-    { id: 'create', label: 'CREATE', icon: Sparkles },
-    { id: 'explore', label: 'EXPLORE', icon: Upload },
-    { id: 'library', label: 'LIBRARY', icon: Library },
-    { id: 'settings', label: 'SETTINGS', icon: Settings },
+    { id: 'create', label: 'STUDIO 🚀', icon: Sparkles },
+    { id: 'explore', label: 'VIBE ✨', icon: Music },
+    { id: 'library', label: 'VAULT 🏛️', icon: Library },
+    { id: 'settings', label: 'ME 💎', icon: UserIcon },
   ] as const;
 
   return (

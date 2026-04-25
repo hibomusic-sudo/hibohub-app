@@ -252,27 +252,41 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-black animate-in fade-in duration-500 rounded-3xl border border-white/5">
       {/* Header Overlay */}
-      <div className="absolute top-4 left-6 right-4 z-50 flex items-center justify-between pointer-events-none">
-        <div className="flex flex-col">
-          <h1 className="font-headline text-3xl font-black text-white drop-shadow-lg pointer-events-auto tracking-tighter">
-            Hook <span className="text-primary italic text-sm">Now</span>
-          </h1>
+      <div className="absolute top-0 left-0 right-0 z-50 p-6 flex flex-col gap-4 pointer-events-none">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <h1 className="font-headline text-3xl font-black text-white drop-shadow-lg pointer-events-auto tracking-tighter">
+              Vibe <span className="text-primary italic text-sm">✨ Live</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20"
+              onClick={() => toast({ title: "Search Mode 🔍", description: "Raadi vibes-ka ugu shidan!" })}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+            <Button 
+              onClick={() => setShowUploadModal(true)}
+              className="rounded-full bg-primary text-white h-10 px-4 shadow-lg glow-purple font-bold border-none"
+            >
+              <Upload className="w-4 h-4 mr-2" /> Post 🚀
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20"
-            onClick={() => toast({ title: "Search Coming Soon", description: "Search functionality is being optimized for the new feed." })}
-          >
-            <Search className="w-5 h-5" />
-          </Button>
-          <Button 
-            onClick={() => setShowUploadModal(true)}
-            className="rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white h-10 px-4 hover:bg-white/20"
-          >
-            <Upload className="w-4 h-4 mr-2" /> Post
-          </Button>
+
+        {/* Suggestions Bar (Gen-Z Style) */}
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pointer-events-auto pb-2">
+          {['For You 🔥', 'Trending 📈', 'New 💎', 'Somali Pop 🎸', 'Aflo 🌊', 'Chill ☕', 'Party 💃'].map((tag) => (
+            <button 
+              key={tag}
+              className="whitespace-nowrap px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white/80 text-[10px] font-bold hover:bg-white/10 hover:text-white transition-all"
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       </div>
 

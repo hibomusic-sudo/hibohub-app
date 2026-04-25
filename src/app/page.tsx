@@ -8,6 +8,7 @@ import { Navigation, TabType } from '@/components/Navigation';
 import { AiStudio } from '@/components/AiStudio';
 import { Explore } from '@/components/Explore';
 import { Library } from '@/components/Library';
+import { Profile } from '@/components/Profile';
 import { AuthScreen } from '@/components/AuthScreen';
 import { PremiumGate } from '@/components/PremiumGate';
 import { Footer } from '@/components/Footer';
@@ -60,21 +61,7 @@ function AppContent() {
       case 'create': return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} initialData={remixData} />;
       case 'explore': return <Explore onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} onRemix={handleRemix} />;
       case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} onRemix={handleRemix} />;
-      case 'settings': return (
-        <div className="flex flex-col items-center justify-center h-96 space-y-4">
-          <h2 className="text-2xl font-bold">Account Settings</h2>
-          {user ? (
-            <p className="text-muted-foreground">Logged in as {user.email || 'User'}</p>
-          ) : (
-            <button 
-              onClick={() => setShowAuth(true)}
-              className="px-6 py-3 rounded-full bg-primary text-white font-bold glow-purple"
-            >
-              Login / Sign Up
-            </button>
-          )}
-        </div>
-      );
+      case 'settings': return <Profile onRemix={handleRemix} />;
       default: return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
     }
   };
