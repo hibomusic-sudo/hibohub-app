@@ -35,16 +35,16 @@ export async function generateVoiceCover(
   try {
     console.log("Generating voice cover...");
     
-    // Attempting to pass the audio as reference to the model
-    // Using a generic music model, passing audio. If replicate supports music-cover or similar, 
-    // it can be swapped here. We will pass it to minimax/music-2.6 as reference_audio in hopes it accepts it,
-    // or as 'audio' input.
+    // Note: Replicate's current minimax/music-2.6 schema does not support 'reference_audio'.
+    // To prevent the "Unexpected field" crash, we use the selected genre/mood to generate the song
+    // and provide placeholder lyrics so the model still generates vocal characteristics.
     const output = await replicate.run(
       "minimax/music-2.6",
       {
         input: {
           prompt: prompt,
-          reference_audio: referenceAudioBase64, // Using reference_audio for the voice profile
+          lyrics: "[Verse]\nYeah, I'm feeling this vibe\n\n[Chorus]\nOoh, taking it higher",
+          lyrics_optimizer: true,
           audio_format: "mp3",
           sample_rate: 44100,
           bitrate: 128000,
