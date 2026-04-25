@@ -26,6 +26,12 @@ const MOOD_LIST = [
   "Dark", "Motivational", "Emotional", "Epic"
 ];
 
+const SINGER_TYPES = [
+  "Male Voice (Nin)",
+  "Female Voice (Naag)",
+  "Group / Choir (Jamac)"
+];
+
 const SONG_TYPES = [
   "Audio Song", "Video Song"
 ];
@@ -46,6 +52,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   const [songPrompt, setSongPrompt] = useState('');
   const [selectedGenre, setSelectedGenre] = useState(GENRE_LIST[0]);
   const [selectedMood, setSelectedMood] = useState(MOOD_LIST[0]);
+  const [selectedSingerType, setSelectedSingerType] = useState(SINGER_TYPES[0]);
   const [selectedSongType, setSelectedSongType] = useState(SONG_TYPES[0]);
   
   // Shared state
@@ -131,7 +138,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         await saveToFirebase({ audioBase64: result.audioBase64, prompt: ttsText }, 'voice');
         toast({ title: "Guul! 🎙️", description: "Codkii waa la sameeyay!" });
       } else {
-        const stylePrompt = `${selectedGenre}, ${selectedMood} mood`;
+        const stylePrompt = `${selectedGenre}, ${selectedMood} mood, ${selectedSingerType}`;
         
         if (selectedSongType === 'Video Song') {
             // Because generateReplicateVideo might not exist or we don't have it imported,
@@ -263,6 +270,16 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
               <div className="relative">
                 <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
                   {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            
+            <div className="space-y-2 col-span-2">
+              <label className="text-sm font-medium text-muted-foreground">Singer Type 🎤</label>
+              <div className="relative">
+                <select value={selectedSingerType} onChange={(e) => setSelectedSingerType(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                  {SINGER_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
