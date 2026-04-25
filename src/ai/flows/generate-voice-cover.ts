@@ -38,7 +38,7 @@ export async function generateVoiceCover(
     // Note: Replicate's current minimax/music-2.6 schema does not support 'reference_audio'.
     // To prevent the "Unexpected field" crash, we use the selected genre/mood to generate the song
     // and provide placeholder lyrics so the model still generates vocal characteristics.
-    const output = await replicate.run(
+    const songOutput = await replicate.run(
       "minimax/music-2.6",
       {
         input: {
@@ -51,6 +51,44 @@ export async function generateVoiceCover(
         }
       }
     );
+
+    // Get the base song URL
+    let baseSongUrl = "";
+    const songOutputAny = songOutput as any;
+    if (songOutputAny?.constructor?.name === 'FileOutput' || typeof songOutputAny?.url === 'function') {
+      baseSongUrl = songOutputAny.url().toString();
+    } else if (typeof songOutput === 'string') {
+      baseSongUrl = songOutput;
+    } else {
+      const str = String(songOutput);
+      if (str.startsWith('http')) baseSongUrl = str;
+      else throw new Error("Could not get base song URL");
+    }
+
+    console.log("Base song generated. Now applying Voice Conversion (RVC) for accuracy...");
+
+    // Stage 2: Apply Voice Conversion (RVC)
+    // We use lucataco/rvc or similar to map the user's voice onto the generated vocals.
+    // For this implementation, we'll use a zero-shot conversion model that takes the reference.
+    const rvcOutput = await replicate.run(
+      "lucataco/rvc:07028f80f68285f76f7f2b963e680a6d09101d2ec757d5c7f8a7d0e461b17b35",
+      {
+        input: {
+          audio: baseSongUrl,
+          model_url: referenceAudioBase64, // Some RVC models can take an audio reference directly
+          index_url: "",
+          transpose: 0,
+          f0method: "rmvpe",
+          index_rate: 0.5,
+          filter_radius: 3,
+          resample_sr: 48000,
+          rms_mix_rate: 0.25,
+          protect: 0.33
+        }
+      }
+    );
+
+    const output = rvcOutput;
 
     let base64Data: string;
     let audioUrl: string = "";

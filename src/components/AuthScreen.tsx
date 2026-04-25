@@ -3,8 +3,15 @@
 
 import React, { useState } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously, 
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
+} from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -66,6 +73,37 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
       if (onBack) onBack();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user profile exists
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          id: user.uid,
+          externalAuthId: user.uid,
+          username: user.displayName || 'Google User',
+          email: user.email,
+          role: 'Regular',
+          freeGenerationsUsed: 0,
+          isPremiumSubscriber: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+      
+      toast({ title: "Welcome! 👋", description: `Signed in as ${user.displayName}` });
+      if (onBack) onBack();
+    } catch (error: any) {
+      toast({ title: "Google Login Error", description: error.message, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +224,26 @@ export function AuthScreen({ onBack }: AuthScreenProps) {
               {isLoading ? "..." : (isLogin ? t('login') : t('signup'))}
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5" /></div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest"><span className="bg-card px-2 text-muted-foreground">Or Connect With</span></div>
+          </div>
+
+          <Button 
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            variant="outline"
+            className="w-full h-14 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 font-bold flex items-center justify-center gap-3 transition-all"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M12 5.04c1.94 0 3.51.68 4.79 1.94l3.48-3.48C18.11 1.49 15.24.5 12 .5 7.42.5 3.51 3.12 1.51 6.94l4.08 3.17c.96-2.88 3.66-5.07 6.41-5.07z" />
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.86 3c2.26-2.09 3.56-5.17 3.56-8.82z" />
+              <path fill="#FBBC05" d="M5.59 14.71c-.24-.72-.37-1.5-.37-2.31s.13-1.59.37-2.31L1.51 6.94C.54 8.88 0 11.06 0 13.31c0 2.25.54 4.43 1.51 6.37l4.08-3.17c-.24-.72-.37-1.5-.37-2.31z" />
+              <path fill="#34A853" d="M12 23.5c3.24 0 5.97-1.07 7.96-2.91l-3.86-3c-1.08.72-2.47 1.15-4.1 1.15-3.15 0-5.81-2.13-6.77-5.01l-4.08 3.17C3.51 20.88 7.42 23.5 12 23.5z" />
+            </svg>
+            Sign in with Google
+          </Button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5" /></div>
