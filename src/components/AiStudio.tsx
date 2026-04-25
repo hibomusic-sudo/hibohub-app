@@ -144,6 +144,7 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
         language: type === 'voice' ? selectedLanguage : '',
         singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : 'User Upload',
         isPublic: isPublic,
+        lyrics: data.prompt || '',
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
         type: type
@@ -395,8 +396,12 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Genre 🎸</label>
                 <div className="relative group">
-                  <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-white/5 border-white/5 text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer group-hover:bg-white/10 transition-all">
-                    {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
+                  <select 
+                    value={selectedGenre} 
+                    onChange={(e) => setSelectedGenre(e.target.value)} 
+                    className="w-full appearance-none rounded-2xl bg-secondary/80 border-white/10 text-white text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer transition-all"
+                  >
+                    {GENRE_LIST.map((g) => <option key={g} value={g} className="bg-[#1a1a1a] text-white">{g}</option>)}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover:text-white transition-colors" />
                 </div>
@@ -405,8 +410,12 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Mood 😊</label>
                 <div className="relative group">
-                  <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-white/5 border-white/5 text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer group-hover:bg-white/10 transition-all">
-                    {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
+                  <select 
+                    value={selectedMood} 
+                    onChange={(e) => setSelectedMood(e.target.value)} 
+                    className="w-full appearance-none rounded-2xl bg-secondary/80 border-white/10 text-white text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer transition-all"
+                  >
+                    {MOOD_LIST.map((m) => <option key={m} value={m} className="bg-[#1a1a1a] text-white">{m}</option>)}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover:text-white transition-colors" />
                 </div>
