@@ -36,6 +36,19 @@ const SONG_TYPES = [
   "Audio Song", "Video Song"
 ];
 
+const LANGUAGES = [
+  "Af Soomaali", "English", "Arabic", "Swahili"
+];
+
+const ADVANCED_STEPS = [
+  "Voice Cleaning (Removing noise)...",
+  "Voice Analysis (Detecting tone)...",
+  "Voice Clone Creation...",
+  "Instrument Selection...",
+  "Vocal Synthesis...",
+  "Mix & Master..."
+];
+
 export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () => void, onRequireAuth: () => boolean }) {
   const { user } = useUser();
   const db = useFirestore();
@@ -44,9 +57,10 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   const [mode, setMode] = useState<Mode>('music');
   
   // Voice Cloning state
-  const { isRecording, audioBlob, audioUrl: recordedAudioUrl, startRecording, stopRecording, clearAudio } = useAudioRecorder();
+  const { isRecording, audioBlob, audioUrl: recordedAudioUrl, duration: recordedDuration, startRecording, stopRecording, clearAudio } = useAudioRecorder();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadMethod, setUploadMethod] = useState<'upload' | 'record'>('upload');
+  const [selectedLanguage, setSelectedLanguage] = useState(LANGUAGES[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Music state
@@ -59,6 +73,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   
   // Shared state
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStepIndex, setGenerationStepIndex] = useState(0);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [videoBase64, setVideoBase64] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -108,6 +123,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         cover_image: '', // Placeholder until we generate cover images
         genre: type === 'music' ? selectedGenre : '',
         mood: type === 'music' ? selectedMood : selectedMood,
+        language: type === 'voice' ? selectedLanguage : '',
         singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : 'User Upload',
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
@@ -124,9 +140,15 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
     if (onRequireAuth()) return;
     if (!useGeneration()) { onShowPremium(); return; }
 
-    if (mode === 'voice' && !audioBlob && !uploadedFile) {
-      toast({ title: "Cod Maqan", description: "Fadlan soo geli ama duub codkaaga.", variant: "destructive" });
-      return;
+    if (mode === 'voice') {
+      if (!audioBlob && !uploadedFile) {
+        toast({ title: "Cod Maqan", description: "Fadlan soo geli ama duub codkaaga.", variant: "destructive" });
+        return;
+      }
+      if (uploadMethod === 'record' && recordedDuration < 10) {
+        toast({ title: "Duubista waa gaaban tahay", description: "Fadlan duub cod ka badan 10 ilbiriqsi.", variant: "destructive" });
+        return;
+      }
     }
     if (mode === 'music' && !isInstrumental && !songPrompt.trim()) {
       toast({ title: "Mawduuca Geli", description: "Fadlan heesta mawduuceeda qor ama shid 'Instrumental'.", variant: "destructive" });
@@ -134,6 +156,20 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
     }
 
     setIsGenerating(true);
+    setGenerationStepIndex(0);
+    
+    // Simulate advanced steps processing for Voice mode
+    let stepInterval: NodeJS.Timeout;
+    if (mode === 'voice') {
+      let currentStep = 0;
+      stepInterval = setInterval(() => {
+        currentStep++;
+        if (currentStep < ADVANCED_STEPS.length) {
+          setGenerationStepIndex(currentStep);
+        }
+      }, 4000); // Change step every 4 seconds
+    }
+
     setAudioBase64(null);
     setVideoBase64(null);
     setIsPlaying(false);
@@ -186,6 +222,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
     } catch (error: any) {
       toast({ title: "Cillad", description: error.message || "Wax baa qaldamay. Mar kale isku day.", variant: "destructive" });
     } finally {
+      if (stepInterval!) clearInterval(stepInterval);
       setIsGenerating(false);
     }
   };
@@ -396,8 +433,20 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        if (file.size > 10 * 1024 * 1024) toast({ title: "Feylka wuu weyn yahay", description: "Fadlan soo geli feyl ka yar 10MB.", variant: "destructive" });
-                        else setUploadedFile(file);
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast({ title: "Feylka wuu weyn yahay", description: "Fadlan soo geli feyl ka yar 10MB.", variant: "destructive" });
+                          return;
+                        }
+                        
+                        // Check duration
+                        const audio = new Audio(URL.createObjectURL(file));
+                        audio.onloadedmetadata = () => {
+                          if (audio.duration < 10) {
+                            toast({ title: "Feylku wuu gaaban yahay", description: "Fadlan soo geli feyl ka badan 10 ilbiriqsi.", variant: "destructive" });
+                          } else {
+                            setUploadedFile(file);
+                          }
+                        };
                       }
                     }}
                   />
@@ -436,6 +485,15 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Song Language 🌍</label>
+              <div className="relative">
+                <select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                  {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Genre to Match 🎸</label>
               <div className="relative">
                 <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
@@ -444,7 +502,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <label className="text-sm font-medium text-muted-foreground">Mood to Match 😊</label>
               <div className="relative">
                 <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
@@ -466,7 +524,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         {isGenerating ? (
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>{mode === 'music' ? 'Abuuraya...' : 'Samaynaya Heesta...'}</span>
+            <span>{mode === 'music' ? 'Abuuraya...' : ADVANCED_STEPS[Math.min(generationStepIndex, ADVANCED_STEPS.length - 1)]}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">

@@ -4,8 +4,10 @@ export function useAudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [duration, setDuration] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -29,8 +31,13 @@ export function useAudioRecorder() {
       mediaRecorder.start();
       setIsRecording(true);
       setAudioBlob(null);
+      setDuration(0);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(null);
+      
+      timerRef.current = setInterval(() => {
+        setDuration(prev => prev + 1);
+      }, 1000);
     } catch (err) {
       console.error('Error accessing microphone:', err);
       throw err;
@@ -41,11 +48,16 @@ export function useAudioRecorder() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   }, [isRecording]);
 
   const clearAudio = useCallback(() => {
     setAudioBlob(null);
+    setDuration(0);
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioUrl(null);
   }, [audioUrl]);
@@ -54,6 +66,7 @@ export function useAudioRecorder() {
     isRecording,
     audioBlob,
     audioUrl,
+    duration,
     startRecording,
     stopRecording,
     clearAudio
