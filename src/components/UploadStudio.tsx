@@ -39,9 +39,16 @@ export function UploadStudio({ onShowPremium, onRequireAuth }: { onShowPremium: 
       return;
     }
 
-    // Validate file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: "Aad u weyn", description: "File-ka waa inuu ka yar yahay 50MB.", variant: "destructive" });
+    // Validate file size (Audio: 20MB, Video: 50MB)
+    const isVideo = file.type.includes('video');
+    const limit = isVideo ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+    
+    if (file.size > limit) {
+      toast({ 
+        title: "Aad u weyn", 
+        description: `File-ka ${isVideo ? 'Video' : 'Audio'} waa inuu ka yar yahay ${isVideo ? '50MB' : '20MB'}.`, 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -153,7 +160,7 @@ export function UploadStudio({ onShowPremium, onRequireAuth }: { onShowPremium: 
         ) : (
           <div className="text-center">
             <p className="text-sm font-bold text-muted-foreground">Riix si aad file dorato</p>
-            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">MP3, WAV, OGG, AAC (MAX 50MB)</p>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">Audio (20MB) | Video (50MB)</p>
           </div>
         )}
       </Card>

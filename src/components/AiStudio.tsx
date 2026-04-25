@@ -353,91 +353,108 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
 
       {/* ── MUSIC MODE ── */}
       {mode === 'music' && (
-        <div className="space-y-5 animate-in fade-in duration-300">
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border">
-            <div>
-              <p className="text-sm font-bold text-white">Instrumental (Music Kaliya) 🎵</p>
-              <p className="text-xs text-muted-foreground mt-1">Muusig aan laheyn codka fanaanka.</p>
-            </div>
-            <button
-              onClick={() => setIsInstrumental(!isInstrumental)}
-              className={cn(
-                "w-12 h-6 rounded-full transition-colors relative",
-                isInstrumental ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform",
-                isInstrumental ? "translate-x-6" : "translate-x-0.5"
-              )} />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Song Description / Lyrics 🎼</label>
-            <Textarea
-              placeholder={isInstrumental ? `Describe the vibe of the instrumental...\ne.g. An upbeat pop backing track.` : `Describe the song or provide lyrics...\ne.g. An upbeat pop song about summer nights.`}
-              value={songPrompt}
-              onChange={(e) => setSongPrompt(e.target.value.slice(0, 600))}
-              rows={4}
-              className="w-full rounded-2xl bg-card border border-border text-sm resize-none focus:ring-2 focus:ring-primary"
-            />
-            <div className="text-right"><span className="text-xs text-muted-foreground">{songPrompt.length}/600</span></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Genre 🎸</label>
-              <div className="relative">
-                <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="p-6 space-y-6 bg-card/40 backdrop-blur-xl border-white/5 shadow-2xl rounded-[2.5rem]">
+            <div className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+              <div>
+                <p className="text-sm font-black text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Instrumental Only 🎵
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Muusig aan laheyn codka fanaanka.</p>
               </div>
+              <button
+                onClick={() => setIsInstrumental(!isInstrumental)}
+                className={cn(
+                  "w-12 h-6 rounded-full transition-all duration-500 relative",
+                  isInstrumental ? "bg-primary glow-purple" : "bg-white/10"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all duration-500 shadow-lg",
+                  isInstrumental ? "translate-x-6" : "translate-x-0.5"
+                )} />
+              </button>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Mood 😊</label>
-              <div className="relative">
-                <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Song Concept 🎼</label>
+                <span className="text-[10px] font-bold text-primary/60">{songPrompt.length}/600</span>
               </div>
+              <Textarea
+                placeholder={isInstrumental ? `Qabo vibe-ka muusiga aad rabto...\ne.g. An upbeat pop backing track.` : `Qoraalka heesta ama mawduuca geli...\ne.g. An upbeat pop song about summer nights.`}
+                value={songPrompt}
+                onChange={(e) => setSongPrompt(e.target.value.slice(0, 600))}
+                className="w-full rounded-[1.5rem] bg-white/5 border-white/5 text-sm p-5 resize-none focus:ring-2 focus:ring-primary/40 focus:bg-white/10 transition-all min-h-[120px]"
+              />
             </div>
-            
-            {!isInstrumental && (
-              <div className="space-y-2 col-span-2 animate-in fade-in slide-in-from-top-2">
-                <label className="text-sm font-medium text-muted-foreground">Singer Type 🎤</label>
-                <div className="relative">
-                  <select value={selectedSingerType} onChange={(e) => setSelectedSingerType(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                    {SINGER_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Genre 🎸</label>
+                <div className="relative group">
+                  <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-white/5 border-white/5 text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer group-hover:bg-white/10 transition-all">
+                    {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover:text-white transition-colors" />
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Mood 😊</label>
+                <div className="relative group">
+                  <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-white/5 border-white/5 text-sm px-5 py-4 pr-10 focus:ring-2 focus:ring-primary/40 outline-none cursor-pointer group-hover:bg-white/10 transition-all">
+                    {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </div>
+
+            {!isInstrumental && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Singer Type 🎤</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SINGER_TYPES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSelectedSingerType(s)}
+                      className={cn(
+                        "py-3 px-2 rounded-xl text-[10px] font-bold border transition-all truncate",
+                        selectedSingerType === s
+                          ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10"
+                          : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                      )}
+                    >
+                      {s.split('(')[0]}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">AI Song Type 🎬</label>
-            <div className="grid grid-cols-2 gap-2">
-              {SONG_TYPES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setSelectedSongType(t)}
-                  className={cn(
-                    "py-3 px-3 rounded-xl text-sm font-bold transition-all border text-center",
-                    selectedSongType === t
-                      ? "bg-primary text-white border-primary glow-purple"
-                      : "bg-card border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
+            
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Format 🎬</label>
+              <div className="grid grid-cols-2 gap-2">
+                {SONG_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedSongType(t)}
+                    className={cn(
+                      "py-4 rounded-2xl text-xs font-black transition-all border flex items-center justify-center gap-2",
+                      selectedSongType === t
+                        ? "bg-primary text-white border-primary shadow-lg glow-purple scale-[1.02]"
+                        : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                    )}
+                  >
+                    {t === 'Video Song' ? <Video className="w-3 h-3" /> : <Music className="w-3 h-3" />}
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -448,11 +465,11 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
             <button
               onClick={() => { setUploadMethod('upload'); clearAudio(); }}
               className={cn("flex-1 py-2 rounded-xl text-xs font-bold transition-all", uploadMethod === 'upload' ? "bg-secondary text-white" : "text-muted-foreground")}
-            >Upload Audio</button>
+            >Upload Audio 📁</button>
             <button
               onClick={() => { setUploadMethod('record'); setUploadedFile(null); }}
               className={cn("flex-1 py-2 rounded-xl text-xs font-bold transition-all", uploadMethod === 'record' ? "bg-secondary text-white" : "text-muted-foreground")}
-            >Record Voice</button>
+            >Record Voice 🎙️</button>
           </div>
 
           {uploadMethod === 'upload' ? (

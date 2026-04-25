@@ -180,7 +180,7 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate rules: Max 25MB, formats: mp3, wav, m4a, mp4
+    // Validate rules: Max 20MB audio, 50MB video, formats: mp3, wav, m4a, mp4
     const validExtensions = ['mp3', 'wav', 'm4a', 'mp4'];
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     
@@ -189,8 +189,16 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
       return;
     }
 
-    if (file.size > 25 * 1024 * 1024) {
-      toast({ title: "Aad u weyn", description: "File-ka waa inuu ka yar yahay 25MB.", variant: "destructive" });
+    // Validate file size (Audio: 20MB, Video: 50MB)
+    const isVideo = file.type.includes('video');
+    const limit = isVideo ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+
+    if (file.size > limit) {
+      toast({ 
+        title: "Aad u weyn", 
+        description: `File-ka ${isVideo ? 'Video' : 'Audio'} waa inuu ka yar yahay ${isVideo ? '50MB' : '20MB'}.`, 
+        variant: "destructive" 
+      });
       return;
     }
 
