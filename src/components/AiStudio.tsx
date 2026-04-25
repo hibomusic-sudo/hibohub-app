@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe } from 'lucide-react';
+import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe, Music, User, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -11,6 +11,7 @@ import { generateReplicateSong } from '@/ai/flows/generate-replicate-song';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
 import { useUser, useFirestore, useFirebaseApp } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
