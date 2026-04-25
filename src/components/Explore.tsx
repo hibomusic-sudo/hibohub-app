@@ -349,6 +349,13 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
 
               {/* Bottom Info */}
               <div className="absolute bottom-10 left-6 right-20 z-10 space-y-3">
+                {item.lyrics && (
+                  <div className="bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/5 max-w-[80%] animate-in fade-in slide-in-from-left-4">
+                    <p className="text-white/90 text-sm italic line-clamp-3 leading-relaxed">
+                      "{item.lyrics}"
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                    <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
                       <UserIcon className="w-5 h-5 text-primary" />
