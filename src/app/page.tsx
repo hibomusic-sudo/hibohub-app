@@ -13,7 +13,7 @@ import { AuthScreen } from '@/components/AuthScreen';
 import { PremiumGate } from '@/components/PremiumGate';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
-import { Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
+import { Music, Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
