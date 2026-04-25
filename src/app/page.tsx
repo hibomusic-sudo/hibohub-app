@@ -6,7 +6,7 @@ import { AppProvider, useApp, Language } from '@/lib/app-context';
 import { FirebaseClientProvider } from '@/firebase';
 import { Navigation, TabType } from '@/components/Navigation';
 import { AiStudio } from '@/components/AiStudio';
-import { UploadStudio } from '@/components/UploadStudio';
+import { Explore } from '@/components/Explore';
 import { Library } from '@/components/Library';
 import { AuthScreen } from '@/components/AuthScreen';
 import { PremiumGate } from '@/components/PremiumGate';
@@ -52,7 +52,7 @@ function AppContent() {
   const renderContent = () => {
     switch (activeTab) {
       case 'create': return <AiStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
-      case 'explore': return <UploadStudio onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
+      case 'explore': return <Explore onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
       case 'library': return <Library onShowPremium={() => setShowPremium(true)} onRequireAuth={handleRequireAuth} />;
       case 'settings': return (
         <div className="flex flex-col items-center justify-center h-96 space-y-4">

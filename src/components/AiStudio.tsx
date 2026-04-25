@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2 } from 'lucide-react';
+import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useApp } from '@/lib/app-context';
 import { generateVoiceCover } from '@/ai/flows/generate-voice-cover';
 import { generateReplicateSong } from '@/ai/flows/generate-replicate-song';
@@ -73,6 +74,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
   
   // Shared state
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [generationStepIndex, setGenerationStepIndex] = useState(0);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [videoBase64, setVideoBase64] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
         mood: type === 'music' ? selectedMood : selectedMood,
         language: type === 'voice' ? selectedLanguage : '',
         singer_type: type === 'music' ? (isInstrumental ? 'Instrumental' : selectedSingerType) : 'User Upload',
+        isPublic: isPublic,
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
         type: type
@@ -206,13 +209,13 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
           : `${selectedGenre}, ${selectedMood} mood, ${selectedSingerType}`;
         
         if (selectedSongType === 'Video Song') {
-            const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt });
+            const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt, isInstrumental });
             setAudioBase64(result.audioBase64);
             try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
             await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
             toast({ title: "Guul! 🎵 (Audio Only)", description: "Video generation not yet hooked up, generated audio instead." });
         } else {
-          const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt });
+          const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt, isInstrumental });
           setAudioBase64(result.audioBase64);
           try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'music'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
           await saveToFirebase({ audioBase64: result.audioBase64, prompt: actualLyrics }, 'music');
@@ -514,6 +517,18 @@ export function AiStudio({ onShowPremium, onRequireAuth }: { onShowPremium: () =
           </div>
         </div>
       )}
+
+      {/* Public/Private Toggle */}
+      <div className="flex items-center justify-between p-4 bg-card/60 border border-border rounded-2xl">
+        <div className="flex items-center gap-3">
+          <Globe className={cn("w-5 h-5", isPublic ? "text-primary" : "text-muted-foreground")} />
+          <div>
+            <p className="text-sm font-bold">{isPublic ? 'Public Content' : 'Private Content'}</p>
+            <p className="text-[10px] text-muted-foreground">Mark as public to show in Explore feed.</p>
+          </div>
+        </div>
+        <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+      </div>
 
       {/* Generate Button */}
       <Button

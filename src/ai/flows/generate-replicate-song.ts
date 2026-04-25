@@ -9,6 +9,7 @@ const replicate = new Replicate({
 export type GenerateReplicateSongInput = {
   lyrics: string;
   style: string;
+  isInstrumental?: boolean;
 };
 
 export type GenerateReplicateSongOutput = {
@@ -19,19 +20,19 @@ export type GenerateReplicateSongOutput = {
 export async function generateReplicateSong(
   input: GenerateReplicateSongInput
 ): Promise<GenerateReplicateSongOutput> {
-  const { lyrics, style } = input;
+  const { lyrics, style, isInstrumental } = input;
 
   if (!process.env.REPLICATE_API_TOKEN) {
     throw new Error("REPLICATE_API_TOKEN is not configured.");
   }
 
-  if (!lyrics || lyrics.trim().length === 0) {
+  if (!isInstrumental && (!lyrics || lyrics.trim().length === 0)) {
     throw new Error("Lyrics are required for song generation.");
   }
 
   // Build structured lyrics with section tags if not already present
-  let structuredLyrics = lyrics.trim();
-  if (!structuredLyrics.includes('[Verse]') && !structuredLyrics.includes('[Chorus]')) {
+  let structuredLyrics = lyrics ? lyrics.trim() : "";
+  if (!isInstrumental && !structuredLyrics.includes('[Verse]') && !structuredLyrics.includes('[Chorus]')) {
     // Auto-add structure tags for user convenience
     const lines = structuredLyrics.split('\n').filter(l => l.trim());
     if (lines.length <= 4) {
@@ -40,6 +41,10 @@ export async function generateReplicateSong(
       const mid = Math.ceil(lines.length / 2);
       structuredLyrics = `[Verse]\n${lines.slice(0, mid).join('\n')}\n\n[Chorus]\n${lines.slice(mid).join('\n')}`;
     }
+  }
+
+  if (isInstrumental) {
+    structuredLyrics = ""; // Ensure minimax/music-2.6 generates instrumental
   }
 
   // Build style prompt

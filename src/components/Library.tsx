@@ -5,9 +5,10 @@ import React, { useState } from 'react';
 import { Play, Download, Share2, Music, Video, Mic, Trash2, Globe, Lock, Check } from 'lucide-react';
 import { useApp } from '@/lib/app-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, deleteDoc, collection, updateDoc } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,24 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
     await deleteDoc(doc(db, 'users', user.uid, colName, item.id));
     if (activeItem?.id === item.id) setActiveItem(null);
     toast({ title: "Removed", description: "Item deleted from library." });
+  };
+
+  const togglePublic = async (item: any) => {
+    if (!user || !db) return;
+    const colName = item.type === 'song' ? 'aiGeneratedSongs' : 'uploadedSongs';
+    const newStatus = !item.isPublic;
+    try {
+      await updateDoc(doc(db, 'users', user.uid, colName, item.id), {
+        isPublic: newStatus
+      });
+      toast({ 
+        title: newStatus ? "Published! 🚀" : "Unpublished 🔒", 
+        description: newStatus ? "Heestaada waa public hadda." : "Heestaada waa private." 
+      });
+      if (activeItem?.id === item.id) setActiveItem({ ...activeItem, isPublic: newStatus });
+    } catch (e) {
+      toast({ title: "Cillad", description: "Waa la bedeli waayay status-ka.", variant: "destructive" });
+    }
   };
 
   if (!user) {
@@ -108,8 +127,19 @@ export function Library({ onShowPremium, onRequireAuth }: { onShowPremium: () =>
             </Button>
             <Button onClick={() => handleShare(activeItem)} variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20 text-white border-0 rounded-2xl h-12">
               {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />} 
-              {isCopied ? "Copied" : "Share"}
+              {isCopied ? "Copied" : "Share Link"}
             </Button>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5">
+             <div className="flex items-center gap-3">
+                {activeItem.isPublic ? <Globe className="w-4 h-4 text-accent" /> : <Lock className="w-4 h-4 text-white/50" />}
+                <div>
+                   <p className="text-xs font-bold text-white">{activeItem.isPublic ? 'Publicly Visible' : 'Private Only'}</p>
+                   <p className="text-[10px] text-white/50">Show this song in Explore feed.</p>
+                </div>
+             </div>
+             <Switch checked={activeItem.isPublic || false} onCheckedChange={() => togglePublic(activeItem)} />
           </div>
           
           <div className="mt-6 bg-black/20 p-2 rounded-2xl flex flex-col gap-2">

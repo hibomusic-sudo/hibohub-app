@@ -146,6 +146,17 @@ service cloud.firestore {
      */
     match /{path=**}/uploadedSongs/{uploadedSongId} {
       allow list: if isSignedIn() && resource.data.isPublic == true;
+      allow get: if isSignedIn() && resource.data.isPublic == true;
+    }
+
+    match /{path=**}/aiGeneratedSongs/{songId} {
+      allow list: if isSignedIn() && resource.data.isPublic == true;
+      allow get: if isSignedIn() && resource.data.isPublic == true;
+    }
+
+    match /{path=**}/aiGeneratedVoices/{voiceId} {
+      allow list: if isSignedIn() && resource.data.isPublic == true;
+      allow get: if isSignedIn() && resource.data.isPublic == true;
     }
 
     /**
