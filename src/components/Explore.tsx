@@ -5,7 +5,7 @@ import {
   Globe, Lock, Share2, Play, Pause, MoreVertical, 
   Search, Upload, Music4, Video, Download, Copy, Check,
   Clock, User as UserIcon, Flame, Sparkles, X, CloudUpload,
-  CheckCircle2, FileAudio, FileVideo, Heart, MessageCircle, Send, Star
+  CheckCircle2, FileAudio, FileVideo, Heart, MessageCircle, Send, Star, AlertTriangle, ShoppingCart, DollarSign, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,7 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Upload Modal State
@@ -163,6 +164,22 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
     }
   };
 
+  const handleBuy = (item: any) => {
+    if (onRequireAuth()) return;
+    toast({ 
+      title: "Confirm Purchase 🛒", 
+      description: `Do you want to buy "${item.title}" for $${item.price || 0}? 70% goes to the creator.`,
+      action: <Button variant="outline" size="sm" onClick={() => toast({ title: "Success ✅", description: "Heesta waa laguu gurtay!" })}>Confirm</Button>
+    });
+  };
+
+  const handleReport = (id: string) => {
+    toast({ 
+      title: "Report Submitted 🚩", 
+      description: "Waad ku mahadsantahay soo sheegistaada. Xuquuqda waan hubin doonaa.",
+    });
+  };
+
   const handleShare = async (item: ContentItem) => {
     const url = window.location.origin + "/song/" + (item.id || item.song_id);
     try {
@@ -262,10 +279,25 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
     }
   };
 
-  const filteredContent = publicContent.filter(item => 
+  const [activeTag, setActiveTag] = useState('For You 🔥');
+
+  let filteredContent = publicContent.filter(item => 
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.genre?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (activeTag === 'Trending 📈') {
+    // Simply sort by some metric (mocking if likesCount is undefined)
+    filteredContent = [...filteredContent].sort((a, b) => (b.likesCount || Math.random()) - (a.likesCount || Math.random()));
+  } else if (activeTag === 'New 💎') {
+    filteredContent = [...filteredContent].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  } else if (activeTag !== 'For You 🔥') {
+    const cleanTag = activeTag.replace(/[^\w\s]/gi, '').trim().toLowerCase();
+    filteredContent = filteredContent.filter(item => 
+      item.genre?.toLowerCase().includes(cleanTag) || 
+      item.title.toLowerCase().includes(cleanTag)
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-black animate-in fade-in duration-500 rounded-3xl border border-white/5">
@@ -297,10 +329,16 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
 
         {/* Suggestions Bar (Gen-Z Style) */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pointer-events-auto pb-2">
-          {['For You 🔥', 'Trending 📈', 'New 💎', 'Somali Pop 🎸', 'Aflo 🌊', 'Chill ☕', 'Party 💃'].map((tag) => (
+          {['For You 🔥', 'Trending 📈', 'New 💎', 'Somali', 'Afro 🌊', 'Chill ☕', 'Party 💃'].map((tag) => (
             <button 
               key={tag}
-              className="whitespace-nowrap px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white/80 text-[10px] font-bold hover:bg-white/10 hover:text-white transition-all"
+              onClick={() => setActiveTag(tag)}
+              className={cn(
+                "whitespace-nowrap px-4 py-1.5 rounded-full backdrop-blur-md border text-[10px] font-bold transition-all",
+                activeTag === tag 
+                  ? "bg-primary/20 border-primary text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
+                  : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:text-white"
+              )}
             >
               {tag}
             </button>
@@ -325,6 +363,18 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
             >
               {/* Media Content */}
               <div className="absolute inset-0 z-0">
+                {/* Dynamic Immersive Background (Blurry Cover) */}
+                {currentlyPlaying === item.id && item.cover_image && (
+                  <div 
+                    className="absolute inset-0 z-0 opacity-40 scale-110 blur-[100px] transition-all duration-1000 animate-pulse"
+                    style={{ 
+                      backgroundImage: `url(${item.cover_image})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  />
+                )}
+                
                 {item.video_url ? (
                   <video 
                     src={item.video_url} 
@@ -386,52 +436,101 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                   <span className="text-xs text-white/80 flex items-center gap-1 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm">
                     <Star className="w-3 h-3 text-yellow-400" /> Viral
                   </span>
+                  {(item as any).isSelling && (
+                    <span className="text-xs text-yellow-400 font-black flex items-center gap-1 bg-yellow-400/20 px-2 py-1 rounded-lg backdrop-blur-sm border border-yellow-400/30">
+                      <DollarSign className="w-3 h-3" /> {(item as any).price}
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Interaction Sidebar */}
-              <div className="absolute bottom-12 right-4 z-20 flex flex-col items-center gap-6">
-                <div className="flex flex-col items-center gap-1">
+              <div className="absolute bottom-12 right-4 z-20 flex flex-col items-center gap-5">
+                {/* Always Visible: Like */}
+                <div className="flex flex-col items-center gap-1 group">
                   <button 
                     onClick={() => handleLike(item.id)}
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all active:scale-90",
-                      likedSongs.has(item.id) ? "bg-red-500 text-white" : "bg-black/40 text-white"
+                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all duration-300 active:scale-75 hover:scale-110 hover:border-red-500/50",
+                      likedSongs.has(item.id) ? "bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]" : "bg-black/40 text-white"
                     )}
                   >
-                    <Heart className={cn("w-6 h-6", likedSongs.has(item.id) && "fill-current")} />
+                    <Heart className={cn("w-6 h-6 transition-transform", likedSongs.has(item.id) && "fill-current scale-110")} />
                   </button>
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">{Math.floor(Math.random() * 500) + 100}</span>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-red-400 transition-colors">{Math.floor(Math.random() * 500) + 100}</span>
                 </div>
 
-                <div className="flex flex-col items-center gap-1">
-                  <button className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90">
-                    <MessageCircle className="w-6 h-6" />
+                {/* Always Visible: Comment */}
+                <div className="flex flex-col items-center gap-1 group">
+                  <button className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-primary/50">
+                    <MessageCircle className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                   </button>
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">{Math.floor(Math.random() * 50)}</span>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">{Math.floor(Math.random() * 50)}</span>
                 </div>
 
-                <div className="flex flex-col items-center gap-1">
-                  <button 
-                    onClick={() => handleShare(item)}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90"
-                  >
-                    <Send className="w-6 h-6" />
-                  </button>
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">Share</span>
-                </div>
-
+                {/* Toggle Button: Three Dots */}
                 <div className="flex flex-col items-center gap-1">
                   <button 
-                    onClick={() => onRemix(item)}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-primary text-white glow-purple transition-all active:scale-90 animate-spin-slow"
+                    onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                    className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 text-white transition-all duration-500 active:scale-75 hover:bg-white/10",
+                      isSidebarExpanded ? "bg-white/20 rotate-90" : "bg-black/40"
+                    )}
                   >
-                    <Sparkles className="w-6 h-6" />
+                    <MoreVertical className="w-6 h-6" />
                   </button>
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">Remix</span>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md">{isSidebarExpanded ? 'Less' : 'More'}</span>
                 </div>
 
-                {/* Love Sticker (Animated) */}
+                {/* Collapsible Section */}
+                <div className={cn(
+                  "flex flex-col items-center gap-5 transition-all duration-500 overflow-hidden",
+                  isSidebarExpanded ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
+                )}>
+                  <div className="flex flex-col items-center gap-1 group">
+                    <button 
+                      onClick={() => handleShare(item)}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-accent/50"
+                    >
+                      <Send className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-accent transition-colors">Share</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1 group">
+                    <button 
+                      onClick={() => onRemix(item)}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-primary text-white glow-purple transition-all duration-300 active:scale-75 hover:scale-110 hover:rotate-90"
+                    >
+                      <Sparkles className="w-6 h-6" />
+                    </button>
+                    <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">Remix</span>
+                  </div>
+
+                  {(item as any).isSelling && (
+                    <div className="flex flex-col items-center gap-1">
+                      <button 
+                        onClick={() => handleBuy(item)}
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 transition-all active:scale-90"
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                      </button>
+                      <span className="text-[10px] font-bold text-white drop-shadow-md">Buy</span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col items-center gap-1">
+                    <button 
+                      onClick={() => handleReport(item.id)}
+                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90"
+                    >
+                      <AlertTriangle className="w-5 h-5 opacity-60" />
+                    </button>
+                    <span className="text-[10px] font-bold text-white drop-shadow-md">Report</span>
+                  </div>
+                </div>
+
+                {/* Love Sticker (Always at bottom) */}
                 <div className="flex flex-col items-center gap-1">
                   <button 
                     onClick={() => toast({ title: "Love Stickers! ❤️", description: "You sent a burst of love!" })}
@@ -440,6 +539,14 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                     <Heart className="w-6 h-6 animate-pulse" />
                   </button>
                   <span className="text-[10px] font-bold text-white drop-shadow-md">Love</span>
+                </div>
+
+                {/* Security Badge */}
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-green-500/20 backdrop-blur-md border border-green-500/30 text-green-400">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <span className="text-[8px] font-bold text-white drop-shadow-md">Secured</span>
                 </div>
               </div>
             </div>

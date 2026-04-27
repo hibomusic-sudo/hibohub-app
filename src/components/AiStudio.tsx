@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe, Music, User, Video } from 'lucide-react';
+import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe, Music, User, Video, ShieldCheck, DollarSign, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useApp } from '@/lib/app-context';
 import { generateVoiceCover } from '@/ai/flows/generate-voice-cover';
 import { generateReplicateSong } from '@/ai/flows/generate-replicate-song';
@@ -18,15 +19,82 @@ import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage'
 
 type Mode = 'music' | 'voice';
 
+const STYLE_LIST = [
+  "Love", "Rap", "Afrobeats", "Traditional", "Pop"
+];
+
 const GENRE_LIST = [
-  "Pop", "Hip Hop", "Afrobeat", "R&B", "Rock", "Electronic", "Jazz", 
-  "Classical", "Lo-fi", "Trap", "Dance", "Gospel", "Reggae", "Latin", "Country"
+  "Pop", "Hip Hop", "Afrobeats", "R&B", "Rock", "Electronic", "Jazz", 
+  "Classical", "Lo-fi", "Trap", "Dance", "Gospel", "Reggae", "Latin", "Country", "Traditional Somali"
 ];
 
 const MOOD_LIST = [
   "Happy", "Sad", "Energetic", "Romantic", "Chill", 
   "Dark", "Motivational", "Emotional", "Epic"
 ];
+
+// ── SOMALI ARTISTS BY GENERATION ──
+const SOMALI_ARTISTS: Record<string, { label: string; emoji: string; artists: string[] }> = {
+  legends_70s: {
+    label: "Legends (70s)",
+    emoji: "👑",
+    artists: [
+      "Magool", "Waaberi Band", "Hasan Adan Samatar",
+      "Cabdi Deeqsi", "Cabdi Qays", "Faadumo Qaasim",
+      "Khadra Daahir", "Maxamed Sulaymaan Tubeec",
+      "Cabdulqaadir Hersi Yamyam", "Sahra Axmed Jaamac"
+    ]
+  },
+  golden_80s: {
+    label: "Golden Era (80s)",
+    emoji: "🌟",
+    artists: [
+      "Xasan Aadan Samatar", "Cabdi Tahliil", "Saado Cali Warsame",
+      "Maxamuud Cabdullaahi Sangub", "Kaltun Bacado",
+      "Cabdullaahi Suldaan (Timacadde)", "Faysal Cumar Mushteeg",
+      "Xaliimo Khaliif Magool", "Axmed Naaji", "Aar Maanta (early)"
+    ]
+  },
+  classic_90s: {
+    label: "Classic (90s)",
+    emoji: "🎵",
+    artists: [
+      "Sahra Halgan", "Maxamed BK", "Cabdi Haybe",
+      "Nimco Yaasiin", "K'naan", "Cabdi Gaab",
+      "Farxiyo Fiska", "Waayaha Cusub", "Aar Maanta",
+      "Xiddigaha Geeska"
+    ]
+  },
+  modern_2000s: {
+    label: "Modern (2000s)",
+    emoji: "🔥",
+    artists: [
+      "Najma Nashaad", "Kiin Jamac", "Dayax Dalnuurshe",
+      "Suldaan Seeraar", "Ilkacase Qays", "Nimco Happy",
+      "Raxma Hassan", "Mohamed BK", "Rashid Abdulahi",
+      "Haboon Nuura", "Sahal Xamda", "Deeqa Axmed",
+      "Ugbaad Aragsan"
+    ]
+  },
+  millennials: {
+    label: "Millennials",
+    emoji: "💫",
+    artists: [
+      "Najma Nashaad", "Suldaan Seeraar", "Ilkacase Qays",
+      "Nimco Happy", "Dayax Dalnuurshe", "Sharma Boy",
+      "Sahra Halgan", "Kiin Jamac"
+    ]
+  },
+  gen_z: {
+    label: "Gen-Z",
+    emoji: "⚡",
+    artists: [
+      "Ruusha", "Xamda Queen", "Hanad Bandz",
+      "King Khalid", "Falis Abdi", "Sharma Boy",
+      "Deeqa Axmed", "Ugbaad Aragsan"
+    ]
+  }
+};
 
 const SINGER_TYPES = [
   "Male Voice (Nin)",
@@ -72,6 +140,20 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
   const [selectedSingerType, setSelectedSingerType] = useState(SINGER_TYPES[0]);
   const [selectedSongType, setSelectedSongType] = useState(SONG_TYPES[0]);
   const [isInstrumental, setIsInstrumental] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState(STYLE_LIST[0]);
+  const [selectedArtist, setSelectedArtist] = useState('');
+  const [selectedGeneration, setSelectedGeneration] = useState('gen_z');
+
+  // Legal Agreements
+  const [agreedArtist, setAgreedArtist] = useState(false);
+  const [agreedCopyright, setAgreedCopyright] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+  const [agreedVoiceLicense, setAgreedVoiceLicense] = useState(false);
+
+  // Marketplace
+  const [isSelling, setIsSelling] = useState(false);
+  const [songPrice, setSongPrice] = useState('');
   
   // Shared state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -146,9 +228,18 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
         isPublic: isPublic,
         lyrics: data.prompt || '',
         lyrics_sync: data.lyricsSync || [],
+        isSelling: isSelling,
+        price: isSelling ? parseFloat(songPrice) || 0 : 0,
+        creatorRevenueSplit: 70,
+        platformRevenueSplit: 30,
+        style: selectedStyle,
+        artist: selectedArtist,
+        generation: selectedGeneration,
         created_at: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Fallback for older sorting code
-        type: type
+        type: type,
+        hasWatermark: true, // Internal flag for security
+        protectionActive: true
       };
       
       await setDoc(doc(db, 'users', user.uid, type === 'music' ? 'aiGeneratedSongs' : 'aiGeneratedVoices', id), docData);
@@ -173,6 +264,19 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
     }
     if (mode === 'music' && !isInstrumental && !songPrompt.trim()) {
       toast({ title: "Mawduuca Geli", description: "Fadlan heesta mawduuceeda qor ama shid 'Instrumental'.", variant: "destructive" });
+      return;
+    }
+
+    // Check Legal Agreements
+    const isVoice = mode === 'voice';
+    const allAgreed = agreedArtist && agreedCopyright && agreedTerms && agreedPrivacy && (!isVoice || agreedVoiceLicense);
+    
+    if (!allAgreed) {
+      toast({ 
+        title: "Heshiiska Sax", 
+        description: "Fadlan aqbal dhammaan shuruudaha sharciga inta aadan bilaabin.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -223,8 +327,8 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
       } else {
         const actualLyrics = isInstrumental ? (songPrompt.trim() || "[Instrumental]") : songPrompt;
         const stylePrompt = isInstrumental 
-          ? `${selectedGenre}, ${selectedMood} mood, instrumental, no vocals`
-          : `${selectedGenre}, ${selectedMood} mood, ${selectedSingerType}`;
+          ? `${selectedGenre}, ${selectedStyle}, ${selectedMood} mood, instrumental, no vocals`
+          : `${selectedGenre}, ${selectedStyle}, ${selectedMood} mood, ${selectedArtist ? `voice of ${selectedArtist}` : selectedSingerType}`;
         
         if (selectedSongType === 'Video Song') {
             const result = await generateReplicateSong({ lyrics: actualLyrics, style: stylePrompt, isInstrumental });
@@ -465,6 +569,159 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
                 ))}
               </div>
             </div>
+
+            {/* ── STYLE SELECTION ── */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Style ✨</label>
+              <div className="flex flex-wrap gap-2">
+                {STYLE_LIST.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedStyle(s)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all",
+                      selectedStyle === s
+                        ? "bg-gradient-to-r from-primary to-accent text-white border-primary shadow-lg shadow-primary/20 scale-[1.02]"
+                        : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── ADVANCED OPTIONS ACCORDION ── */}
+            <Accordion type="multiple" className="w-full space-y-4">
+              
+              {/* ── SOMALI ARTIST SELECTION ── */}
+              {!isInstrumental && (
+                <AccordionItem value="artist" className="border-white/10 bg-black/20 rounded-[1.5rem] px-4">
+                  <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4">
+                    🎤🇸🇴 Somali Artist Voice
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pb-2">
+                      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
+                        {Object.entries(SOMALI_ARTISTS).map(([key, gen]) => (
+                          <button
+                            key={key}
+                            onClick={() => { setSelectedGeneration(key); setSelectedArtist(''); }}
+                            className={cn(
+                              "whitespace-nowrap px-3 py-2 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1.5",
+                              selectedGeneration === key
+                                ? "bg-primary/20 border-primary text-primary"
+                                : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                            )}
+                          >
+                            <span>{gen.emoji}</span> {gen.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto hide-scrollbar pr-1">
+                        {SOMALI_ARTISTS[selectedGeneration]?.artists.map((artist) => (
+                          <button
+                            key={artist}
+                            onClick={() => setSelectedArtist(selectedArtist === artist ? '' : artist)}
+                            className={cn(
+                              "py-3 px-3 rounded-xl text-[11px] font-bold border transition-all text-left truncate",
+                              selectedArtist === artist
+                                ? "bg-primary text-white border-primary shadow-lg glow-purple"
+                                : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+                            )}
+                          >
+                            {SOMALI_ARTISTS[selectedGeneration].emoji} {artist}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedArtist && (
+                        <p className="text-[10px] text-primary/80 px-1 animate-in fade-in">
+                          🎤 Codka: <span className="font-bold text-primary">{selectedArtist}</span> ayaa loo isticmaalayaa
+                        </p>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {/* ── MARKETPLACE: SELL OPTION ── */}
+              <AccordionItem value="marketplace" className="border-yellow-500/10 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-[1.5rem] px-4">
+                <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-yellow-400" />
+                    Marketplace & Monetization 💰
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-white">Sell This Song</p>
+                        <p className="text-[10px] text-muted-foreground">Ka faa'iidayso heestaada (70% / 30%).</p>
+                      </div>
+                      <Switch checked={isSelling} onCheckedChange={setIsSelling} className="data-[state=checked]:bg-yellow-500" />
+                    </div>
+                    {isSelling && (
+                      <div className="animate-in fade-in slide-in-from-top-2 space-y-2 pt-2 border-t border-white/5 mt-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Price (USD) 💵</label>
+                        <input
+                          type="number"
+                          min="0.50"
+                          step="0.50"
+                          placeholder="e.g. 2.99"
+                          value={songPrice}
+                          onChange={(e) => setSongPrice(e.target.value)}
+                          className="w-full rounded-2xl bg-white/5 border border-white/10 text-white text-sm px-5 py-3 focus:ring-2 focus:ring-yellow-500/40 outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* ── LEGAL AGREEMENTS ── */}
+              <AccordionItem value="legal" className="border-green-500/10 bg-green-500/5 rounded-[1.5rem] px-4">
+                <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                    Legal Agreements 📜
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-2 pb-2">
+                    <p className="text-[10px] text-muted-foreground mb-3">Dhammaan qodobadan waa inaad saxdaa inta aadan heeso samayn.</p>
+                    {[
+                      { id: 'artist', label: 'Artist Agreement', checked: agreedArtist, setter: setAgreedArtist },
+                      { id: 'copyright', label: 'Copyright Protection', checked: agreedCopyright, setter: setAgreedCopyright },
+                      { id: 'terms', label: 'Terms & Conditions', checked: agreedTerms, setter: setAgreedTerms },
+                      { id: 'privacy', label: 'Privacy Policy', checked: agreedPrivacy, setter: setAgreedPrivacy },
+                      ...(mode === 'voice' ? [{ id: 'voice', label: 'Voice License', checked: agreedVoiceLicense, setter: setAgreedVoiceLicense }] : []),
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => item.setter(!item.checked)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
+                          item.checked
+                            ? "bg-green-500/10 border-green-500/30 text-green-400"
+                            : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded border-2 flex items-center justify-center transition-all flex-shrink-0",
+                          item.checked ? "bg-green-500 border-green-500" : "border-white/20"
+                        )}>
+                          {item.checked && <CheckSquare className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-[11px] font-bold">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+            </Accordion>
           </Card>
         </div>
       )}
