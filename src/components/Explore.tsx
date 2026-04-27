@@ -19,6 +19,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from '@/hooks/use-toast';
 import { KaraokeLyrics } from './KaraokeLyrics';
+import { PremiumVisualizer } from './PremiumVisualizer';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -335,13 +336,9 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-zinc-800 to-black relative">
-                    {/* Audio Visualizer Placeholder */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                      <div className="flex items-end gap-1 h-32">
-                        {[1,2,3,4,5,6,7,8].map(i => (
-                          <div key={i} className="w-2 bg-primary rounded-full animate-bounce" style={{ animationDuration: `${0.5 + i*0.1}s` }} />
-                        ))}
-                      </div>
+                    {/* Dynamic Premium Visualizer */}
+                    <div className="absolute bottom-1/3 left-0 right-0 h-48 flex items-end opacity-60 z-0 px-4">
+                      <PremiumVisualizer isPlaying={currentlyPlaying === item.id} />
                     </div>
                     {item.cover_image ? (
                       <img src={item.cover_image} alt={item.title} className="w-48 h-48 rounded-3xl object-cover z-10 shadow-2xl glow-purple rotate-3" />

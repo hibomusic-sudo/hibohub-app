@@ -49,38 +49,33 @@ export function KaraokeLyrics({
         
         // Calculate progress within the word (0 to 100%)
         let progress = 0;
+        let fillColor = 'rgba(255, 255, 255, 0.2)';
+        
         if (isActive) {
           progress = ((currentTime - item.start) / (item.end - item.start)) * 100;
+          fillColor = '#8C2CFB'; // Primary color
         } else if (isPast) {
           progress = 100;
+          fillColor = 'rgba(140, 44, 251, 0.6)'; // Primary color at 60% opacity
         }
 
         return (
           <span
             key={`${index}-${item.word}`}
             className={cn(
-              "relative text-2xl font-black transition-all duration-200 select-none",
+              "relative inline-block text-2xl font-black transition-all duration-200 select-none",
               isActive ? "scale-110 active-word z-10" : "scale-100"
             )}
+            style={{
+              backgroundImage: `linear-gradient(to right, ${fillColor} ${progress}%, rgba(255, 255, 255, 0.2) ${progress}%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: isActive ? 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.4))' : 'none',
+              color: 'transparent' // Fallback
+            }}
           >
-            {/* Background (Gray/Inactive) */}
-            <span className="text-white/20">
-              {item.word}
-            </span>
-            
-            {/* Foreground (Progressive Fill) */}
-            <span 
-              className={cn(
-                "absolute top-0 left-0 overflow-hidden whitespace-nowrap transition-all duration-100",
-                isActive ? "text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.8)]" : isPast ? "text-primary/60" : "text-transparent"
-              )}
-              style={{ 
-                width: `${progress}%`,
-                textShadow: isActive ? '0 0 20px rgba(168, 85, 247, 0.4)' : 'none'
-              }}
-            >
-              {item.word}
-            </span>
+            {item.word}
 
             {/* Subtle highlight bar below the active word */}
             {isActive && (
