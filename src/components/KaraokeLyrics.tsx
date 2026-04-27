@@ -46,20 +46,46 @@ export function KaraokeLyrics({
       {lyricsSync.map((item, index) => {
         const isActive = currentTime >= item.start && currentTime <= item.end;
         const isPast = currentTime > item.end;
+        
+        // Calculate progress within the word (0 to 100%)
+        let progress = 0;
+        if (isActive) {
+          progress = ((currentTime - item.start) / (item.end - item.start)) * 100;
+        } else if (isPast) {
+          progress = 100;
+        }
 
         return (
           <span
             key={`${index}-${item.word}`}
             className={cn(
-              "text-lg font-black transition-all duration-300 rounded-lg px-1",
-              isActive 
-                ? cn(activeColor, "scale-125 glow-purple active-word z-10") 
-                : isPast 
-                  ? "text-white/40" 
-                  : "text-white/80"
+              "relative text-2xl font-black transition-all duration-200 select-none",
+              isActive ? "scale-110 active-word z-10" : "scale-100"
             )}
           >
-            {item.word}
+            {/* Background (Gray/Inactive) */}
+            <span className="text-white/20">
+              {item.word}
+            </span>
+            
+            {/* Foreground (Progressive Fill) */}
+            <span 
+              className={cn(
+                "absolute top-0 left-0 overflow-hidden whitespace-nowrap transition-all duration-100",
+                isActive ? "text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.8)]" : isPast ? "text-primary/60" : "text-transparent"
+              )}
+              style={{ 
+                width: `${progress}%`,
+                textShadow: isActive ? '0 0 20px rgba(168, 85, 247, 0.4)' : 'none'
+              }}
+            >
+              {item.word}
+            </span>
+
+            {/* Subtle highlight bar below the active word */}
+            {isActive && (
+              <span className="absolute -bottom-1 left-0 h-0.5 bg-primary w-full rounded-full animate-pulse shadow-[0_0_10px_#A855F7]" />
+            )}
           </span>
         );
       })}
