@@ -35,7 +35,7 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="w-full mt-8 mb-36 px-4">
+    <footer className="w-full mt-8 mb-28 px-4">
       {/* Social Links */}
       <div className="flex justify-center gap-3 mb-4">
         {socialLinks.map((link) => (

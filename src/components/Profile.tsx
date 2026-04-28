@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { User, Music, Video, Settings, Heart, Users, Calendar, Share2, Edit3, Grid, List as ListIcon, Sparkles } from 'lucide-react';
+import { User, Music, Video, Settings, Heart, Users, Calendar, Share2, Edit3, Grid, List as ListIcon, Sparkles, DollarSign } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -109,6 +109,50 @@ export function Profile({ onRemix }: { onRemix: (data: any) => void }) {
               <p className="text-lg font-black text-white">{stats.following}</p>
               <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Following</p>
             </div>
+          </div>
+
+          {/* Analytics & Earnings Dashboard */}
+          <div className="w-full bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-3xl p-5 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl transition-all group-hover:bg-primary/20" />
+            
+            <div className="flex justify-between items-start mb-4 relative z-10">
+              <div>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1"><DollarSign className="w-3 h-3 text-green-400" /> Wallet Balance</p>
+                <h3 className="text-3xl font-black text-white mt-1">$458.50</h3>
+                <p className="text-[10px] text-primary font-bold mt-1">🪙 2,450 Hibo Coins</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button size="sm" className="bg-primary hover:bg-primary/80 text-white rounded-full h-8 text-xs font-bold px-4 shadow-[0_0_15px_rgba(168,85,247,0.4)]" onClick={() => alert('Wali lama xirin API-ga lacag-bixinta (E-Dahab/Zaad).')}>
+                  Top Up
+                </Button>
+                <Button size="sm" variant="outline" className="border-white/10 text-white hover:bg-white/10 rounded-full h-8 text-xs font-bold px-4" onClick={() => alert('Lacagtaada waxaad la bixi kartaa marka ay gaarto $500.')}>
+                  Withdraw
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5 relative z-10">
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <p className="text-[10px] text-muted-foreground">Total Plays 🎧</p>
+                <p className="text-sm font-bold text-white mt-0.5">12.4K</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <p className="text-[10px] text-muted-foreground">Songs Sold 🛒</p>
+                <p className="text-sm font-bold text-white mt-0.5">34</p>
+              </div>
+            </div>
+
+            {/* Mini Chart Mockup */}
+            <div className="h-16 flex items-end justify-between gap-1 mt-2 relative z-10">
+              {[40, 25, 60, 30, 80, 45, 95].map((height, i) => (
+                <div key={i} className="w-full bg-primary/20 rounded-t-sm relative group/chart cursor-pointer hover:bg-primary/50 transition-colors" style={{ height: `${height}%` }}>
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-black text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover/chart:opacity-100 transition-opacity">
+                    ${height * 12}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[9px] text-center text-muted-foreground mt-2 uppercase tracking-widest">Earnings (Last 7 Days)</p>
           </div>
 
           <div className="flex gap-3 w-full max-w-xs">

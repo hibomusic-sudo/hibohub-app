@@ -5,7 +5,7 @@ import {
   Globe, Lock, Share2, Play, Pause, MoreVertical, 
   Search, Upload, Music4, Video, Download, Copy, Check,
   Clock, User as UserIcon, Flame, Sparkles, X, CloudUpload,
-  CheckCircle2, FileAudio, FileVideo, Heart, MessageCircle, Send, Star, AlertTriangle, ShoppingCart, DollarSign, Shield
+  CheckCircle2, FileAudio, FileVideo, Heart, MessageCircle, Send, Star, AlertTriangle, ShoppingCart, DollarSign, Shield, Music
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,11 @@ type ContentItem = {
 };
 
 export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremium: () => void, onRequireAuth: () => boolean, onRemix: (data: any) => void }) {
+  const [songPrice, setSongPrice] = useState('0.99');
+  
+  const [activeCommentsId, setActiveCommentsId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
+
   const { user } = useUser();
   const db = useFirestore();
   const firebaseApp = useFirebaseApp();
@@ -105,9 +110,9 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
         getDocs(aiVoicesQuery).catch(e => { console.error("AI Voices query failed:", e); return { docs: [] }; })
       ]);
 
-      const uploads = (uploadsSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
-      const aiSongs = (aiSongsSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
-      const aiVoices = (aiVoicesSnap as any).docs.map(doc => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const uploads = (uploadsSnap as any).docs.map((doc: any) => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const aiSongs = (aiSongsSnap as any).docs.map((doc: any) => ({ ...doc.data(), id: doc.id } as ContentItem));
+      const aiVoices = (aiVoicesSnap as any).docs.map((doc: any) => ({ ...doc.data(), id: doc.id } as ContentItem));
 
       const combined = [...uploads, ...aiSongs, ...aiVoices].sort((a, b) => {
         const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
@@ -300,7 +305,7 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-black animate-in fade-in duration-500 rounded-3xl border border-white/5">
+    <div className="flex flex-col h-[calc(100dvh-80px)] overflow-hidden bg-black animate-in fade-in duration-500 rounded-3xl border border-white/5">
       {/* Header Overlay */}
       <div className="absolute top-0 left-0 right-0 z-50 p-6 flex flex-col gap-4 pointer-events-none">
         <div className="flex items-center justify-between">
@@ -462,14 +467,35 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
 
                 {/* Always Visible: Comment */}
                 <div className="flex flex-col items-center gap-1 group">
-                  <button className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-primary/50">
+                  <button 
+                    onClick={() => setActiveCommentsId(item.id)}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-primary/50"
+                  >
                     <MessageCircle className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                   </button>
                   <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">{Math.floor(Math.random() * 50)}</span>
                 </div>
 
+                {/* Always Visible: Use this Sound (Spinning Disc) */}
+                <div className="flex flex-col items-center gap-1 group mt-2">
+                  <button 
+                    onClick={() => onRemix(item)}
+                    className="w-12 h-12 rounded-full flex items-center justify-center relative transition-all duration-300 active:scale-90 hover:scale-105"
+                  >
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-spin-slow" />
+                    <div className="w-10 h-10 rounded-full bg-zinc-900 border-4 border-black flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <Music className="w-4 h-4 text-primary" />
+                      )}
+                    </div>
+                  </button>
+                  <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">Isticmaal</span>
+                </div>
+
                 {/* Toggle Button: Three Dots */}
-                <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-col items-center gap-1 mt-2">
                   <button 
                     onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
                     className={cn(
@@ -497,15 +523,7 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                     <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-accent transition-colors">Share</span>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1 group">
-                    <button 
-                      onClick={() => onRemix(item)}
-                      className="w-12 h-12 rounded-full flex items-center justify-center bg-primary text-white glow-purple transition-all duration-300 active:scale-75 hover:scale-110 hover:rotate-90"
-                    >
-                      <Sparkles className="w-6 h-6" />
-                    </button>
-                    <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">Remix</span>
-                  </div>
+
 
                   {(item as any).isSelling && (
                     <div className="flex flex-col items-center gap-1">
@@ -635,6 +653,62 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Comments Drawer */}
+      {activeCommentsId && (
+        <div className="absolute inset-0 z-[100] flex flex-col justify-end pointer-events-none">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto" onClick={() => setActiveCommentsId(null)} />
+          <div className="relative w-full h-[60%] bg-zinc-950 rounded-t-[2rem] border-t border-white/10 p-5 flex flex-col pointer-events-auto animate-in slide-in-from-bottom-full duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+            <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">Fikradaha (Comments) 💬</h3>
+            
+            <div className="flex-1 overflow-y-auto space-y-5 hide-scrollbar">
+              {/* Dummy comments to simulate social engagement */}
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary border border-primary/20 shadow-lg glow-purple">U1</div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-black text-white/80">User_123</p>
+                  <p className="text-sm text-white mt-0.5">Hees shidan waaye sxb! 🔥 Keep it up!</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 border border-blue-500/20">A</div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-black text-white/80">Axmed_S</p>
+                  <p className="text-sm text-white mt-0.5">Wow, codka macaan ee aad samaysay aad ayuu ii soo jiitay. 🎵</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center text-xs font-bold text-green-400 border border-green-500/20">F</div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-black text-white/80">Faadumo_99</p>
+                  <p className="text-sm text-white mt-0.5">Xagee kasoo qaadatay beat-kan? Aad ayuu u shidan yahay! 💃</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2 items-center bg-white/5 border border-white/10 rounded-[1.5rem] p-1.5">
+              <input 
+                type="text" 
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Qor fikirkaaga (Add a comment)..."
+                className="flex-1 bg-transparent px-4 py-2 text-sm text-white focus:outline-none placeholder:text-white/30"
+              />
+              <Button 
+                onClick={() => {
+                  if(!commentText.trim()) return;
+                  toast({ title: "Fikirkaaga waa la diray! ✅", description: "Mahadsanid, waan ku darnay comment-gaaga." });
+                  setCommentText("");
+                }}
+                className="rounded-full w-10 h-10 p-0 bg-primary text-white hover:scale-105 transition-all shadow-lg glow-purple"
+              >
+                <Send className="w-4 h-4 ml-0.5" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

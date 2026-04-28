@@ -12,8 +12,10 @@ import { Profile } from '@/components/Profile';
 import { AuthScreen } from '@/components/AuthScreen';
 import { PremiumGate } from '@/components/PremiumGate';
 import { Footer } from '@/components/Footer';
+import { HelperBot } from '@/components/HelperBot';
+import { Onboarding } from '@/components/Onboarding';
 import { Toaster } from '@/components/ui/toaster';
-import { Music, Sparkles, Languages, LogOut, User as UserIcon } from 'lucide-react';
+import { Music, Sparkles, Languages, LogOut, User as UserIcon, Bell, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -71,7 +73,7 @@ function AppContent() {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col relative px-6 pt-10">
+    <div className="max-w-md mx-auto min-h-[100dvh] flex flex-col relative px-6 pt-10">
       {/* Gen-Z Stickers */}
       <Sticker icon={Sparkles} className="top-[15%] left-[5%] w-8 h-8" delay="0s" />
       <Sticker icon={Sparkles} className="top-[40%] right-[10%] w-6 h-6" delay="1s" />
@@ -86,8 +88,56 @@ function AppContent() {
             </div>
             <span className="font-headline text-2xl font-black tracking-tighter">HIBO MUSIC AI</span>
           </div>
-
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-secondary transition-all relative outline-none cursor-pointer">
+                  <Bell className="w-5 h-5 text-muted-foreground" />
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(168,85,247,1)]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-0 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-primary/10">
+                  <h3 className="font-bold text-white flex items-center gap-2"><Bell className="w-4 h-4 text-primary" /> Ogeysiisyada (Notifications)</h3>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto hide-scrollbar">
+                  {/* Dummy Notification 1 */}
+                  <div className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Heestaadii "Somali Love" waa diyaar! 🎵</p>
+                      <p className="text-xs text-muted-foreground mt-1">2 daqiiqo kahor</p>
+                    </div>
+                  </div>
+                  {/* Dummy Notification 2 */}
+                  <div className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer flex gap-3 opacity-70">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                      <DollarSign className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Axmed ayaa iibsaday heestaada! 💰</p>
+                      <p className="text-xs text-muted-foreground mt-1">1 saac kahor</p>
+                    </div>
+                  </div>
+                  {/* Dummy Notification 3 */}
+                  <div className="p-4 hover:bg-white/5 transition-colors cursor-pointer flex gap-3 opacity-70">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                      <UserIcon className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-white font-medium">Faadumo ayaa ku follow garaysay! 👋</p>
+                      <p className="text-xs text-muted-foreground mt-1">3 saac kahor</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 border-t border-white/5 text-center bg-black/40 hover:bg-white/5 cursor-pointer transition-colors">
+                  <p className="text-xs font-bold text-primary">Arag Dhammaan</p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-10 h-10 rounded-full bg-secondary/50 border border-white/5 flex items-center justify-center hover:bg-secondary transition-all">
@@ -141,6 +191,8 @@ function AppContent() {
       
       {showPremium && <PremiumGate onBack={() => setShowPremium(false)} />}
       {showAuth && !user && <AuthScreen onBack={() => setShowAuth(false)} />}
+      <HelperBot />
+      <Onboarding />
       <Toaster />
     </div>
   );

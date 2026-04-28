@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe, Music, User, Video, ShieldCheck, DollarSign, CheckSquare } from 'lucide-react';
+import { Mic2, Sparkles, Volume2, Download, Play, Pause, ChevronDown, Music4, MessageSquare, Flame, UploadCloud, Mic, X, Trash2, Globe, Music, User, Video, ShieldCheck, DollarSign, CheckSquare, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -424,7 +424,7 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-32">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-8">
       <header className="space-y-2">
         <h1 className="font-headline text-3xl font-bold text-glow-purple flex items-center gap-2">
           AI Studio <Sparkles className="w-6 h-6" />
@@ -592,135 +592,134 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
             </div>
 
             {/* ── ADVANCED OPTIONS ACCORDION ── */}
-            <Accordion type="multiple" className="w-full space-y-4">
-              
-              {/* ── SOMALI ARTIST SELECTION ── */}
-              {!isInstrumental && (
-                <AccordionItem value="artist" className="border-white/10 bg-black/20 rounded-[1.5rem] px-4">
-                  <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4">
-                    🎤🇸🇴 Somali Artist Voice
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 pb-2">
-                      <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
-                        {Object.entries(SOMALI_ARTISTS).map(([key, gen]) => (
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              <AccordionItem value="advanced" className="border-white/10 bg-black/20 rounded-[1.5rem] px-4">
+                <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4">
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-primary" />
+                    Advanced Options & Settings ⚙️
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6 pb-2 pt-2">
+                    
+                    {/* ── SOMALI ARTIST SELECTION ── */}
+                    {!isInstrumental && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-black text-white">
+                          <Mic className="w-4 h-4 text-white/70" />
+                          Somali Artist Voice
+                        </div>
+                        <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
+                          {Object.entries(SOMALI_ARTISTS).map(([key, gen]) => (
+                            <button
+                              key={key}
+                              onClick={() => { setSelectedGeneration(key); setSelectedArtist(''); }}
+                              className={cn(
+                                "whitespace-nowrap px-3 py-2 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1.5",
+                                selectedGeneration === key
+                                  ? "bg-primary/20 border-primary text-primary"
+                                  : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                              )}
+                            >
+                              <span>{gen.emoji}</span> {gen.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto hide-scrollbar pr-1">
+                          {SOMALI_ARTISTS[selectedGeneration]?.artists.map((artist) => (
+                            <button
+                              key={artist}
+                              onClick={() => setSelectedArtist(selectedArtist === artist ? '' : artist)}
+                              className={cn(
+                                "py-3 px-3 rounded-xl text-[11px] font-bold border transition-all text-left truncate",
+                                selectedArtist === artist
+                                  ? "bg-primary text-white border-primary shadow-lg glow-purple"
+                                  : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
+                              )}
+                            >
+                              {SOMALI_ARTISTS[selectedGeneration].emoji} {artist}
+                            </button>
+                          ))}
+                        </div>
+                        {selectedArtist && (
+                          <p className="text-[10px] text-primary/80 px-1 animate-in fade-in">
+                            🎤 Codka: <span className="font-bold text-primary">{selectedArtist}</span> ayaa loo isticmaalayaa
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── MARKETPLACE: SELL OPTION ── */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                      <div className="flex items-center gap-2 text-sm font-black text-yellow-400">
+                        <DollarSign className="w-4 h-4 text-yellow-400/70" />
+                        Marketplace & Monetization 💰
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-white">Sell This Song</p>
+                          <p className="text-[10px] text-muted-foreground">Ka faa'iidayso heestaada (70% / 30%).</p>
+                        </div>
+                        <Switch checked={isSelling} onCheckedChange={setIsSelling} className="data-[state=checked]:bg-yellow-500" />
+                      </div>
+                      {isSelling && (
+                        <div className="animate-in fade-in slide-in-from-top-2 space-y-2 pt-2">
+                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Price (USD) 💵</label>
+                          <input
+                            type="number"
+                            min="0.50"
+                            step="0.50"
+                            placeholder="e.g. 2.99"
+                            value={songPrice}
+                            onChange={(e) => setSongPrice(e.target.value)}
+                            className="w-full rounded-2xl bg-white/5 border border-white/10 text-white text-sm px-5 py-3 focus:ring-2 focus:ring-yellow-500/40 outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── LEGAL AGREEMENTS ── */}
+                    <div className="space-y-4 pt-4 border-t border-white/5">
+                      <div className="flex items-center gap-2 text-sm font-black text-green-400">
+                        <ShieldCheck className="w-4 h-4 text-green-400/70" />
+                        Legal Agreements 📜
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-muted-foreground mb-3">Dhammaan qodobadan waa inaad saxdaa inta aadan heeso samayn.</p>
+                        {[
+                          { id: 'artist', label: 'Artist Agreement', checked: agreedArtist, setter: setAgreedArtist },
+                          { id: 'copyright', label: 'Copyright Protection', checked: agreedCopyright, setter: setAgreedCopyright },
+                          { id: 'terms', label: 'Terms & Conditions', checked: agreedTerms, setter: setAgreedTerms },
+                          { id: 'privacy', label: 'Privacy Policy', checked: agreedPrivacy, setter: setAgreedPrivacy },
+                          ...(mode === 'voice' ? [{ id: 'voice', label: 'Voice License', checked: agreedVoiceLicense, setter: setAgreedVoiceLicense }] : []),
+                        ].map((item) => (
                           <button
-                            key={key}
-                            onClick={() => { setSelectedGeneration(key); setSelectedArtist(''); }}
+                            key={item.id}
+                            onClick={() => item.setter(!item.checked)}
                             className={cn(
-                              "whitespace-nowrap px-3 py-2 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1.5",
-                              selectedGeneration === key
-                                ? "bg-primary/20 border-primary text-primary"
+                              "w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
+                              item.checked
+                                ? "bg-green-500/10 border-green-500/30 text-green-400"
                                 : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
                             )}
                           >
-                            <span>{gen.emoji}</span> {gen.label}
+                            <div className={cn(
+                              "w-4 h-4 rounded border-2 flex items-center justify-center transition-all flex-shrink-0",
+                              item.checked ? "bg-green-500 border-green-500" : "border-white/20"
+                            )}>
+                              {item.checked && <CheckSquare className="w-3 h-3 text-white" />}
+                            </div>
+                            <span className="text-[11px] font-bold">{item.label}</span>
                           </button>
                         ))}
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto hide-scrollbar pr-1">
-                        {SOMALI_ARTISTS[selectedGeneration]?.artists.map((artist) => (
-                          <button
-                            key={artist}
-                            onClick={() => setSelectedArtist(selectedArtist === artist ? '' : artist)}
-                            className={cn(
-                              "py-3 px-3 rounded-xl text-[11px] font-bold border transition-all text-left truncate",
-                              selectedArtist === artist
-                                ? "bg-primary text-white border-primary shadow-lg glow-purple"
-                                : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10 hover:text-white"
-                            )}
-                          >
-                            {SOMALI_ARTISTS[selectedGeneration].emoji} {artist}
-                          </button>
-                        ))}
-                      </div>
-                      {selectedArtist && (
-                        <p className="text-[10px] text-primary/80 px-1 animate-in fade-in">
-                          🎤 Codka: <span className="font-bold text-primary">{selectedArtist}</span> ayaa loo isticmaalayaa
-                        </p>
-                      )}
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              )}
 
-              {/* ── MARKETPLACE: SELL OPTION ── */}
-              <AccordionItem value="marketplace" className="border-yellow-500/10 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-[1.5rem] px-4">
-                <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4 flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-yellow-400" />
-                    Marketplace & Monetization 💰
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 pb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-white">Sell This Song</p>
-                        <p className="text-[10px] text-muted-foreground">Ka faa'iidayso heestaada (70% / 30%).</p>
-                      </div>
-                      <Switch checked={isSelling} onCheckedChange={setIsSelling} className="data-[state=checked]:bg-yellow-500" />
-                    </div>
-                    {isSelling && (
-                      <div className="animate-in fade-in slide-in-from-top-2 space-y-2 pt-2 border-t border-white/5 mt-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Price (USD) 💵</label>
-                        <input
-                          type="number"
-                          min="0.50"
-                          step="0.50"
-                          placeholder="e.g. 2.99"
-                          value={songPrice}
-                          onChange={(e) => setSongPrice(e.target.value)}
-                          className="w-full rounded-2xl bg-white/5 border border-white/10 text-white text-sm px-5 py-3 focus:ring-2 focus:ring-yellow-500/40 outline-none"
-                        />
-                      </div>
-                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
-
-              {/* ── LEGAL AGREEMENTS ── */}
-              <AccordionItem value="legal" className="border-green-500/10 bg-green-500/5 rounded-[1.5rem] px-4">
-                <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4 flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-green-400" />
-                    Legal Agreements 📜
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-2 pb-2">
-                    <p className="text-[10px] text-muted-foreground mb-3">Dhammaan qodobadan waa inaad saxdaa inta aadan heeso samayn.</p>
-                    {[
-                      { id: 'artist', label: 'Artist Agreement', checked: agreedArtist, setter: setAgreedArtist },
-                      { id: 'copyright', label: 'Copyright Protection', checked: agreedCopyright, setter: setAgreedCopyright },
-                      { id: 'terms', label: 'Terms & Conditions', checked: agreedTerms, setter: setAgreedTerms },
-                      { id: 'privacy', label: 'Privacy Policy', checked: agreedPrivacy, setter: setAgreedPrivacy },
-                      ...(mode === 'voice' ? [{ id: 'voice', label: 'Voice License', checked: agreedVoiceLicense, setter: setAgreedVoiceLicense }] : []),
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => item.setter(!item.checked)}
-                        className={cn(
-                          "w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
-                          item.checked
-                            ? "bg-green-500/10 border-green-500/30 text-green-400"
-                            : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-4 h-4 rounded border-2 flex items-center justify-center transition-all flex-shrink-0",
-                          item.checked ? "bg-green-500 border-green-500" : "border-white/20"
-                        )}>
-                          {item.checked && <CheckSquare className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className="text-[11px] font-bold">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
             </Accordion>
           </Card>
         </div>
