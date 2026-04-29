@@ -10,6 +10,7 @@ export type GenerateVoiceCoverInput = {
   referenceAudioBase64: string; // The uploaded or recorded voice
   genre: string;
   mood: string;
+  lyrics?: string;
 };
 
 import { getAudioAlignment, WordTimestamp } from "./get-audio-alignment";
@@ -23,7 +24,7 @@ export type GenerateVoiceCoverOutput = {
 export async function generateVoiceCover(
   input: GenerateVoiceCoverInput
 ): Promise<GenerateVoiceCoverOutput> {
-  const { referenceAudioBase64, genre, mood } = input;
+  const { referenceAudioBase64, genre, mood, lyrics } = input;
 
   if (!process.env.REPLICATE_API_TOKEN) {
     throw new Error("REPLICATE_API_TOKEN is not configured.");
@@ -33,7 +34,15 @@ export async function generateVoiceCover(
   // but since current one-shot singing RVC is unstable on Replicate,
   // we use Minimax 2.6 to generate a high-quality song with a matching vocal style.
   
-  const prompt = `A professional song in ${genre} style, ${mood} mood. The vocals should be clear, emotional and match the style of the reference performance.`;
+  const finalGenre = genre.includes("Auto") ? "a unique modern style" : genre;
+  const finalMood = mood.includes("Auto") ? "dynamic and expressive" : mood;
+
+  const prompt = `A professional song in ${finalGenre} style, ${finalMood} mood. The vocals should be clear, emotional and match the style of the reference performance.`;
+  
+  // Default Somali lyrics if none provided
+  const defaultLyrics = "[Verse]\nHalkan ka bilow... codkaagu waa kan ugu shidan\nHeestan adigaa iska leh, vibe-kaagu waa kii ugu dambeeyey\n\n[Chorus]\nHibo Music AI, waa meesha riyadu ka dhalato\nCodkaagu waa dahab, duniduna way ku maqlaysaa";
+  
+  const finalLyrics = lyrics?.trim() ? lyrics : defaultLyrics;
 
   try {
     console.log("Generating high-quality AI song with vocal characteristics...");
@@ -43,7 +52,7 @@ export async function generateVoiceCover(
       {
         input: {
           prompt: prompt,
-          lyrics: "[Verse]\nHalkan ka bilow... codkaagu waa kan ugu shidan\nHeestan adigaa iska leh, vibe-kaagu waa kii ugu dambeeyey\n\n[Chorus]\nHibo Music AI, waa meesha riyadu ka dhalato\nCodkaagu waa dahab, duniduna way ku maqlaysaa",
+          lyrics: finalLyrics,
           lyrics_optimizer: true,
           audio_format: "mp3",
           sample_rate: 44100,

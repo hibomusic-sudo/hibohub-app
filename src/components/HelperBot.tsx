@@ -60,10 +60,31 @@ export function HelperBot() {
     <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end">
       {/* Greeting Bubble */}
       {showGreeting && !isOpen && (
-        <div className="mb-4 p-3 bg-card border border-white/10 rounded-2xl shadow-xl max-w-[200px] animate-in slide-in-from-right fade-in">
-          <p className="text-xs text-white leading-relaxed">👋 Soo dhowoow sxb! Ma ku caawiyaa?</p>
-          <button onClick={() => setShowGreeting(false)} className="absolute -top-2 -right-2 bg-zinc-800 rounded-full p-1 border border-white/10 hover:bg-zinc-700">
-            <X className="w-3 h-3 text-white" />
+        <div 
+          onClick={() => { setIsOpen(true); setShowGreeting(false); }}
+          className="mb-4 p-4 bg-black/80 backdrop-blur-xl border border-primary/30 rounded-2xl shadow-[0_0_30px_rgba(168,85,247,0.2)] max-w-[260px] animate-in slide-in-from-bottom-5 fade-in duration-700 relative overflow-hidden cursor-pointer hover:border-primary/60 hover:scale-105 transition-all"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-50" />
+          <div className="relative z-10 space-y-2">
+            <p className="text-sm font-black text-white flex items-center gap-2">
+              <Bot className="w-4 h-4 text-primary animate-pulse" /> Hibo Assistant ✨
+            </p>
+            <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1">
+              <p className="text-white/80 pb-1">Ma ogtahay inaad HiboHub ku samayn karto:</p>
+              <p className="flex items-center gap-1.5 text-white"><span className="w-1.5 h-1.5 rounded-full bg-primary" /> Heeso AI casri ah 🎵</p>
+              <p className="flex items-center gap-1.5 text-white"><span className="w-1.5 h-1.5 rounded-full bg-primary" /> Voice Cloning & Covers 🎙️</p>
+              <p className="flex items-center gap-1.5 text-white"><span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Train Custom Voice 🚀</p>
+            </div>
+            <p className="text-[10px] text-primary font-bold mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
+              <span>I weydii sida loo bilaabo!</span>
+              <span className="animate-bounce">👋</span>
+            </p>
+          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }} 
+            className="absolute top-3 right-3 p-1 bg-white/5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors z-20"
+          >
+            <X className="w-3 h-3" />
           </button>
         </div>
       )}

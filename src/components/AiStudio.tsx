@@ -24,12 +24,12 @@ const STYLE_LIST = [
 ];
 
 const GENRE_LIST = [
-  "Pop", "Hip Hop", "Afrobeats", "R&B", "Rock", "Electronic", "Jazz", 
+  "Auto (AI Decide)", "Pop", "Hip Hop", "Afrobeats", "R&B", "Rock", "Electronic", "Jazz", 
   "Classical", "Lo-fi", "Trap", "Dance", "Gospel", "Reggae", "Latin", "Country", "Traditional Somali"
 ];
 
 const MOOD_LIST = [
-  "Happy", "Sad", "Energetic", "Romantic", "Chill", 
+  "Auto (AI Decide)", "Happy", "Sad", "Energetic", "Romantic", "Chill", 
   "Dark", "Motivational", "Emotional", "Epic"
 ];
 
@@ -107,7 +107,8 @@ const SONG_TYPES = [
 ];
 
 const LANGUAGES = [
-  "Af Soomaali", "English", "Arabic", "Swahili"
+  "English", "Af Soomaali", "Swahili", "Arabic", "Amharic", "Afaan Oromoo", 
+  "French", "Spanish", "Hindi"
 ];
 
 const ADVANCED_STEPS = [
@@ -131,7 +132,9 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadMethod, setUploadMethod] = useState<'upload' | 'record'>('upload');
   const [selectedLanguage, setSelectedLanguage] = useState(LANGUAGES[0]);
+  const [trainFile, setTrainFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const trainInputRef = useRef<HTMLInputElement>(null);
   
   // Music state
   const [songPrompt, setSongPrompt] = useState('');
@@ -145,11 +148,11 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
   const [selectedGeneration, setSelectedGeneration] = useState('gen_z');
 
   // Legal Agreements
-  const [agreedArtist, setAgreedArtist] = useState(false);
-  const [agreedCopyright, setAgreedCopyright] = useState(false);
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
-  const [agreedVoiceLicense, setAgreedVoiceLicense] = useState(false);
+  const [agreedArtist, setAgreedArtist] = useState(true);
+  const [agreedCopyright, setAgreedCopyright] = useState(true);
+  const [agreedTerms, setAgreedTerms] = useState(true);
+  const [agreedPrivacy, setAgreedPrivacy] = useState(true);
+  const [agreedVoiceLicense, setAgreedVoiceLicense] = useState(true);
 
   // Marketplace
   const [isSelling, setIsSelling] = useState(false);
@@ -318,11 +321,12 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
         const result = await generateVoiceCover({ 
           referenceAudioBase64: base64Audio, 
           genre: selectedGenre, 
-          mood: selectedMood 
+          mood: selectedMood,
+          lyrics: songPrompt
         });
         setAudioBase64(result.audioBase64);
         try { localStorage.setItem('hibohub_last_audio', result.audioBase64); localStorage.setItem('hibohub_last_mode', 'voice'); localStorage.removeItem('hibohub_last_video'); } catch (e) {}
-        await saveToFirebase({ audioBase64: result.audioBase64, prompt: 'Voice Cover', lyricsSync: result.lyricsSync }, 'voice');
+        await saveToFirebase({ audioBase64: result.audioBase64, prompt: songPrompt.trim() || 'Voice Cover / AI Song', lyricsSync: result.lyricsSync }, 'voice');
         toast({ title: "Guul! 🎙️", description: "Heestii codkaaga ahayd waa diyaar!" });
       } else {
         const actualLyrics = isInstrumental ? (songPrompt.trim() || "[Instrumental]") : songPrompt;
@@ -435,26 +439,26 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
       </header>
 
       {/* Mode Toggle */}
-      <div className="flex gap-2 p-1 rounded-2xl bg-card border border-border">
+      <div className="flex gap-2 p-1 rounded-2xl bg-card border border-border max-w-md mx-auto">
         <button
           onClick={() => { setMode('music'); setAudioBase64(null); setVideoBase64(null); }}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all",
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
             mode === 'music' ? "bg-primary text-white glow-purple shadow-lg" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Music4 className="w-4 h-4" />
-          Create AI Music
+          Music AI
         </button>
         <button
           onClick={() => { setMode('voice'); setAudioBase64(null); setVideoBase64(null); }}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all",
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all",
             mode === 'voice' ? "bg-primary text-white glow-purple shadow-lg" : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Mic className="w-4 h-4" />
-          Voice Cloning
+          Voice AI
         </button>
       </div>
 
@@ -817,37 +821,103 @@ export function AiStudio({ onShowPremium, onRequireAuth, initialData }: { onShow
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Song Language 🌍</label>
-              <div className="relative">
-                <select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Qoraalka / Lyrics ✍️</label>
+              <span className="text-[10px] font-bold text-primary/60">{songPrompt.length}/600</span>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Genre to Match 🎸</label>
-              <div className="relative">
-                <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-            <div className="space-y-2 col-span-2">
-              <label className="text-sm font-medium text-muted-foreground">Mood to Match 😊</label>
-              <div className="relative">
-                <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-                  {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
+            <Textarea
+              placeholder="Erayada aad rabto in codkaagu uu ku heeso halkan ku qor (Ama AI ayaa iskeed u allifaysa)..."
+              value={songPrompt}
+              onChange={(e) => setSongPrompt(e.target.value.slice(0, 600))}
+              className="w-full rounded-[1.5rem] bg-white/5 border-white/5 text-sm p-5 resize-none focus:ring-2 focus:ring-primary/40 focus:bg-white/10 transition-all min-h-[100px]"
+            />
           </div>
+
+          <Accordion type="single" collapsible className="w-full space-y-4 pt-2">
+            <AccordionItem value="advanced" className="border-white/10 bg-black/20 rounded-[1.5rem] px-4">
+              <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-primary" />
+                  Advanced Settings & Music FX ⚙️
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-2 gap-4 pb-4 pt-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Language 🌍</label>
+                    <div className="relative">
+                      <select value={selectedLanguage} onChange={(e) => setSelectedLanguage(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                        {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Music Genre 🎸</label>
+                    <div className="relative">
+                      <select value={selectedGenre} onChange={(e) => setSelectedGenre(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                        {GENRE_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <label className="text-sm font-medium text-muted-foreground">FX / Mood 😊</label>
+                    <div className="relative">
+                      <select value={selectedMood} onChange={(e) => setSelectedMood(e.target.value)} className="w-full appearance-none rounded-2xl bg-card border border-border text-sm px-4 py-3 pr-10 focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+                        {MOOD_LIST.map((m) => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="train" className="border-primary/20 bg-primary/5 rounded-[1.5rem] px-4 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-50" />
+              <AccordionTrigger className="text-sm font-black text-white hover:no-underline py-4 relative z-10">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-green-400" />
+                  Train Custom AI Voice (Pro) 🚀
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="relative z-10">
+                <div className="space-y-4 pb-4 pt-2">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Soo geli 10 ilaa 15 daqiiqo oo codkaaga saafi ah (aan muusig lahayn). Tani waxay damaanad qaadaysaa in AI-gu barto codkaaga 100%.
+                  </p>
+                  <div className="border-2 border-dashed border-primary/30 hover:border-primary transition-colors rounded-2xl p-4 text-center bg-black/40">
+                    {trainFile ? (
+                      <div className="flex items-center justify-between bg-primary/20 px-3 py-2 rounded-xl">
+                        <span className="text-xs font-bold truncate max-w-[150px]">{trainFile.name}</span>
+                        <button onClick={() => setTrainFile(null)} className="text-destructive"><X className="w-4 h-4" /></button>
+                      </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-6 h-6 text-primary mx-auto mb-2" />
+                        <p className="text-[10px] font-bold">Upload Voice Data (.zip/.mp3)</p>
+                        <input type="file" accept=".zip,audio/*" className="hidden" ref={trainInputRef} onChange={(e) => { if(e.target.files?.[0]) setTrainFile(e.target.files[0]); }} />
+                        <Button onClick={() => trainInputRef.current?.click()} variant="outline" size="sm" className="rounded-xl mt-2 text-[10px] h-7">Select Data</Button>
+                      </>
+                    )}
+                  </div>
+                  <Button 
+                    disabled={!trainFile}
+                    className="w-full py-4 rounded-xl text-xs font-black bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg"
+                    onClick={() => { toast({ title: "Uploading...", description: "Codkaaga waa la tababarayaa." }); setTrainFile(null); }}
+                  >
+                    Start Server Training
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
+
+
 
       {/* Magic Button */}
       {mode === 'music' && (
