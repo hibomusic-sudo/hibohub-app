@@ -450,17 +450,17 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
               </div>
 
               {/* Interaction Sidebar */}
-              <div className="absolute bottom-12 right-4 z-20 flex flex-col items-center gap-5">
+              <div className="absolute bottom-12 right-4 z-20 flex flex-col items-center gap-4">
                 {/* Always Visible: Like */}
                 <div className="flex flex-col items-center gap-1 group">
                   <button 
                     onClick={() => handleLike(item.id)}
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all duration-300 active:scale-75 hover:scale-110 hover:border-red-500/50",
+                      "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all duration-300 active:scale-75 hover:scale-110 hover:border-red-500/50",
                       likedSongs.has(item.id) ? "bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]" : "bg-black/40 text-white"
                     )}
                   >
-                    <Heart className={cn("w-6 h-6 transition-transform", likedSongs.has(item.id) && "fill-current scale-110")} />
+                    <Heart className={cn("w-5 h-5 transition-transform", likedSongs.has(item.id) && "fill-current scale-110")} />
                   </button>
                   <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-red-400 transition-colors">{Math.floor(Math.random() * 500) + 100}</span>
                 </div>
@@ -469,15 +469,15 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                 <div className="flex flex-col items-center gap-1 group">
                   <button 
                     onClick={() => setActiveCommentsId(item.id)}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-primary/50"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-primary/50"
                   >
-                    <MessageCircle className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                    <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                   </button>
                   <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-primary transition-colors">{Math.floor(Math.random() * 50)}</span>
                 </div>
 
                 {/* Always Visible: Use this Sound (Spinning Disc) */}
-                <div className="flex flex-col items-center gap-1 group mt-2">
+                <div className="flex flex-col items-center gap-1 group mt-1">
                   <button 
                     onClick={() => onRemix(item)}
                     className="w-12 h-12 rounded-full flex items-center justify-center relative transition-all duration-300 active:scale-90 hover:scale-105"
@@ -495,43 +495,41 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                 </div>
 
                 {/* Toggle Button: Three Dots */}
-                <div className="flex flex-col items-center gap-1 mt-2">
+                <div className="flex flex-col items-center gap-1 mt-1">
                   <button 
                     onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 text-white transition-all duration-500 active:scale-75 hover:bg-white/10",
+                      "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 text-white transition-all duration-500 active:scale-75 hover:bg-white/10",
                       isSidebarExpanded ? "bg-white/20 rotate-90" : "bg-black/40"
                     )}
                   >
-                    <MoreVertical className="w-6 h-6" />
+                    <MoreVertical className="w-5 h-5" />
                   </button>
                   <span className="text-[10px] font-bold text-white drop-shadow-md">{isSidebarExpanded ? 'Less' : 'More'}</span>
                 </div>
 
                 {/* Collapsible Section */}
                 <div className={cn(
-                  "flex flex-col items-center gap-5 transition-all duration-500 overflow-hidden",
+                  "flex flex-col items-center gap-4 transition-all duration-500 overflow-hidden",
                   isSidebarExpanded ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
                 )}>
                   <div className="flex flex-col items-center gap-1 group">
                     <button 
                       onClick={() => handleShare(item)}
-                      className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-accent/50"
+                      className="w-10 h-10 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 text-white transition-all duration-300 active:scale-75 hover:scale-110 hover:border-accent/50"
                     >
-                      <Send className="w-6 h-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                      <Send className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <span className="text-[10px] font-bold text-white drop-shadow-md group-hover:text-accent transition-colors">Share</span>
                   </div>
-
-
 
                   {(item as any).isSelling && (
                     <div className="flex flex-col items-center gap-1">
                       <button 
                         onClick={() => handleBuy(item)}
-                        className="w-12 h-12 rounded-full flex items-center justify-center bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 transition-all active:scale-90"
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500 text-black shadow-lg shadow-yellow-500/20 transition-all active:scale-90"
                       >
-                        <ShoppingCart className="w-5 h-5" />
+                        <ShoppingCart className="w-4 h-4" />
                       </button>
                       <span className="text-[10px] font-bold text-white drop-shadow-md">Buy</span>
                     </div>
@@ -540,31 +538,12 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                   <div className="flex flex-col items-center gap-1">
                     <button 
                       onClick={() => handleReport(item.id)}
-                      className="w-12 h-12 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90"
+                      className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white transition-all active:scale-90"
                     >
-                      <AlertTriangle className="w-5 h-5 opacity-60" />
+                      <AlertTriangle className="w-4 h-4 opacity-60" />
                     </button>
                     <span className="text-[10px] font-bold text-white drop-shadow-md">Report</span>
                   </div>
-                </div>
-
-                {/* Love Sticker (Always at bottom) */}
-                <div className="flex flex-col items-center gap-1">
-                  <button 
-                    onClick={() => toast({ title: "Love Stickers! ❤️", description: "You sent a burst of love!" })}
-                    className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-tr from-pink-500 to-rose-500 text-white shadow-lg shadow-rose-500/20 transition-all active:scale-90"
-                  >
-                    <Heart className="w-6 h-6 animate-pulse" />
-                  </button>
-                  <span className="text-[10px] font-bold text-white drop-shadow-md">Love</span>
-                </div>
-
-                {/* Security Badge */}
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-green-500/20 backdrop-blur-md border border-green-500/30 text-green-400">
-                    <Shield className="w-5 h-5" />
-                  </div>
-                  <span className="text-[8px] font-bold text-white drop-shadow-md">Secured</span>
                 </div>
               </div>
             </div>
