@@ -86,7 +86,7 @@ function AppContent() {
             <div className="w-10 h-10 rounded-2xl premium-gradient flex items-center justify-center glow-purple rotate-3 shadow-lg">
               <Music className="w-6 h-6 text-white" />
             </div>
-            <span className="font-headline text-2xl font-black tracking-tighter">HIBO MUSIC AI</span>
+            <span className="font-headline text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-sm">HIBO MUSIC AI</span>
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
