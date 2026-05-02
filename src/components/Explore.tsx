@@ -367,7 +367,10 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
               className="feed-item h-full w-full snap-start relative flex flex-col items-center justify-center bg-zinc-900"
             >
               {/* Media Content */}
-              <div className="absolute inset-0 z-0">
+              <div 
+                className="absolute inset-0 z-0 cursor-pointer group"
+                onClick={() => handlePlayPause(item)}
+              >
                 {/* Dynamic Immersive Background (Blurry Cover) */}
                 {currentlyPlaying === item.id && item.cover_image && (
                   <div 
@@ -392,20 +395,31 @@ export function Explore({ onShowPremium, onRequireAuth, onRemix }: { onShowPremi
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-zinc-800 to-black relative">
                     {/* Dynamic Premium Visualizer */}
-                    <div className="absolute bottom-1/3 left-0 right-0 h-48 flex items-end opacity-60 z-0 px-4">
+                    <div className="absolute bottom-1/3 left-0 right-0 h-48 flex items-end opacity-60 z-0 px-4 pointer-events-none">
                       <PremiumVisualizer isPlaying={currentlyPlaying === item.id} />
                     </div>
                     {item.cover_image ? (
-                      <img src={item.cover_image} alt={item.title} className="w-48 h-48 rounded-3xl object-cover z-10 shadow-2xl glow-purple rotate-3" />
+                      <img src={item.cover_image} alt={item.title} className="w-48 h-48 rounded-3xl object-cover z-10 shadow-2xl glow-purple rotate-3 transition-transform duration-500 group-hover:scale-105" />
                     ) : (
-                      <div className="w-48 h-48 rounded-3xl bg-secondary/50 flex items-center justify-center z-10 shadow-2xl glow-teal rotate-3">
+                      <div className="w-48 h-48 rounded-3xl bg-secondary/50 flex items-center justify-center z-10 shadow-2xl glow-teal rotate-3 transition-transform duration-500 group-hover:scale-105">
                          <Music4 className="w-20 h-20 text-primary" />
                       </div>
                     )}
                   </div>
                 )}
                 {/* Dark Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 pointer-events-none" />
+
+                {/* Play/Pause Overlay Icon */}
+                <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-2xl">
+                    {currentlyPlaying === item.id ? (
+                      <Pause className="w-10 h-10" />
+                    ) : (
+                      <Play className="w-10 h-10 ml-1" />
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Bottom Info */}
